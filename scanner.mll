@@ -1,0 +1,62 @@
+(* Ocamllex scanner for eGrahper *)
+
+{ open Parser }
+
+rule token = parse
+  [' ' '\t' '\r' '\n'] { token lexbuf } (* Whitespace *)
+| "/*"     { comment lexbuf }           (* Comments *)
+| '('      { LPAREN }
+| ')'      { RPAREN }
+| '['      { LBRACKET }
+| ']'      { RBRACKET }
+| '{'      { LBRACE }
+| '}'      { RBRACE }
+| ';'      { SEMI }
+| ','      { COMMA }
+| '+'      { PLUS }
+| '-'      { MINUS }
+| '*'      { TIMES }
+| '/'      { DIVIDE }
+| '%'      { MOD }
+| '='      { ASSIGN }
+| '.'      { DOT }
+| "=="     { EQ }
+| "!="     { NEQ }
+| '<'      { LT }
+| "<="     { LEQ }
+| '>'      { GT }
+| ">="     { GEQ }
+| "&&"     { AND }
+| "||"     { OR }
+| '!'      { NOT }
+| "if"     { IF }
+| "else"   { ELSE }
+| "elif"   { ELSEIF }
+| "for"    { FOR }
+| "in"     { IN }
+| "while"  { WHILE }
+| "return" { RETURN }
+| "break"  { BREAK }
+| "continue" { CONTINUE }
+
+| "num"    { NUM }
+| "bool"   { BOOL }
+| "string" { STR }
+| "void"   { VOID }
+| "list"   { LIST }
+| "fun"    { FUN }
+| "class"  { CLASS }
+
+| "True"   { TRUE }
+| "False"  { FALSE }
+| "NULL"   { NULL }
+
+| ['0'-'9']+'.'?['0'-'9']* as lxm { LITERAL(float_of_string lxm)}
+| ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
+| '\"'[^'\"']* '\"' as lxm { STRING(lxm) }
+| eof { EOF }
+| _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
+
+and comment = parse
+  "*/" { token lexbuf }
+| _    { comment lexbuf }
