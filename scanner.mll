@@ -45,7 +45,7 @@ rule token = parse
 | "void"   { VOID }
 | "list"   { LIST }
 | "fun"    { FUN }
-| "class"  { CLASS }
+(*| "class"  { CLASS }*)
 
 | "True"   { TRUE }
 | "False"  { FALSE }
