@@ -15,6 +15,7 @@ type expr =
   | Unop of uop * expr
   | Assign of string * expr
   | Call of string * expr list (*function call*)
+  | Objcall of string * string * expr list 
   | List of expr list
   | Mem of string * expr
   | ListAssign of string * expr * expr

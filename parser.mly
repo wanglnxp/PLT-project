@@ -5,8 +5,8 @@ open Ast
 %token SEMI LPAREN RPAREN LBRACKET RBRACKET LBRACE RBRACE COMMA DOT
 %token PLUS MINUS TIMES DIVIDE MOD ASSIGN NOT
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
-%token RETURN IF ELSE ELSEIF FOR IN WHILE BREAK CONTINUE NUM STR BOOL VOID
-%token LIST FUN NULL /*CLASS*/
+%token RETURN IF ELSE ELSEIF FOR IN WHILE BREAK CONTINUE NUM STR BOOL VOID ENDELIF
+%token LIST NULL /*CLASS*/
 %token <float> LITERAL
 %token <string> ID
 %token <string> STRING
@@ -21,6 +21,7 @@ open Ast
 %left LT GT LEQ GEQ
 %left PLUS MINUS
 %left TIMES DIVIDE
+%left MOD
 %right NOT NEG /*should we use nonassoc?*/
 
 %start start
@@ -42,40 +43,35 @@ vdecl_list:
   | vdecl_list vdecl { $2 :: $1 }
 
 vdecl:
-    NUMBER ID SEMI    { {vtype=Num; vname=$2; value=Assign($2, Number(0.))} }
-  | STRING ID SEMI    { {vtype=Str; vname=$2; value=Assign($2, String("\"\"") )} }
-  | BOOL ID SEMI    { {vtype=Bool; vname=$2; value=Assign($2, BoolLit(false) )} }
-  | LIST ID   SEMI    { {vtype=List; vname=$2; value=Assign($2, List([]))} }
-  | typ ID ASSIGN expr SEMI { {vtype=$1; vname=$2; value=Assign($2, $4)} }
+  typ ID ASSIGN expr SEMI { {vtype=$1; vname=$2; value=Assign($2, $4)} }
 
 stmt_list:
     /* nothing */   { [] }
   | stmt_list stmt  { $2 :: $1 }
 
 
-elseif_opt:
-    /* nothing */ { Block([]) }
-  | elseif_list   { Block(List.rev $1) }
-
-elseif_list:                    /* rules never reduced*/
+elseif_list:
     /*nothing*/     { [] }  
   | elseif_list elseif  { $2 :: $1 }
 
 elseif:
-  ELSEIF LPAREN expr RPAREN LBRACE stmt_list RBRACE  { Elseif($3, List.rev $5) }
+  ELSEIF LPAREN expr RPAREN stmt { Elseif($3, List.rev $5) }
 
 stmt:
-  expr SEMI                          { Expr $1 }
-| LBRACE stmt_list RBRACE            { Block(List.rev $2) }
-| RETURN SEMI               { Return Noexpr } /*is it needed?*/
-| RETURN expr SEMI          { Return($2) }
-
-| IF LPAREN expr RPAREN stmt elseif_opt %prec NOELSE  { If($3, $5, $6, [Block([])]) }
-| IF LPAREN expr RPAREN stmt elseif_opt ELSE stmt  { If($3, $5, $6, $8) }
-
-| FOR LPAREN expr_opt SEMI expr SEMI expr_opt RPAREN stmt { For($3, $5, $7, $9) }
-| FOR LPAREN expr IN expr RPAREN stmt { Foreach($3, $5, $7)}
-| WHILE LPAREN expr RPAREN stmt  { While($3, $5) }
+    expr SEMI                          { Expr $1 }
+  | LBRACE stmt_list RBRACE            { Block(List.rev $2) }
+  | RETURN SEMI               { Return Noexpr } /*is it needed?*/
+  | RETURN expr SEMI          { Return($2) }
+  
+  | IF LPAREN expr RPAREN stmt elseif_list ENDELIF %prec NOELSE  { If($3, $5, $6, [Block([])]) }
+/* we do not want to use endelif */
+  | IF LPAREN expr RPAREN stmt elseif_list ENDELIF ELSE stmt  { If($3, $5, $6, $9) }
+  
+  | FOR LPAREN expr_opt SEMI expr SEMI expr_opt RPAREN stmt { For($3, $5, $7, $9) }
+  | FOR LPAREN expr IN expr RPAREN stmt { Foreach($3, $5, $7)}
+  | WHILE LPAREN expr RPAREN stmt  { While($3, $5) }
+  | BREAK SEMI  {Break}
+  | CONTINUE SEMI  {Continue}
 
 fdecl:
    typ ID LPAREN formals_opt RPAREN LBRACE vdecl_list stmt_list RBRACE
@@ -111,6 +107,7 @@ expr:
   | TRUE             { BoolLit(true) }
   | FALSE            { BoolLit(false) }
   | ID               { Id($1) }
+  | NULL             { Noexpr }
   | expr PLUS   expr { Binop($1, Add,   $3) }
   | expr MINUS  expr { Binop($1, Sub,   $3) }
   | expr TIMES  expr { Binop($1, Mult,  $3) }
@@ -134,6 +131,8 @@ expr:
 
   | ID LPAREN list_opt RPAREN { Call($1, $3) }
   | LPAREN expr RPAREN { $2 }
+
+  | ID DOT ID LPAREN list_opt RPAREN { Objcall($1, $3, $5) }
 
 list_opt:
     /*nothing*/  { [] }

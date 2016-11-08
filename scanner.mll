@@ -38,13 +38,13 @@ rule token = parse
 | "return" { RETURN }
 | "break"  { BREAK }
 | "continue" { CONTINUE }
+| "endelif"{ ENDELIF }
 
 | "num"    { NUM }
 | "bool"   { BOOL }
 | "string" { STR }
 | "void"   { VOID }
 | "list"   { LIST }
-| "fun"    { FUN }
 (*| "class"  { CLASS }*)
 
 | "True"   { TRUE }
