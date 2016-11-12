@@ -33,14 +33,10 @@ start:
   program EOF { $1 }
 
 program:
-    /* nothing */   { [], [], [] }
-  | program vdecl { let (a,b,c) = $1 in ($2 :: a), b, c }
-  | program stmt { let (a,b,c) = $1 in a, ($2 :: b), c }
-  | program fdecl { let (a,b,c) = $1 in a, b, ($2 :: c) }
+    /* nothing */   { [], [] }
+  | program stmt { let (a, b) = $1 in ($2 :: a), b }
+  | program fdecl { let (a, b) = $1 in a, ($2 :: b) }
 
-vdecl_list:
-    /* nothing */    { [] }
-  | vdecl_list vdecl { $2 :: $1 }
 
 vdecl:
   typ ID ASSIGN expr SEMI { {vtype=$1; vname=$2; value=Assign($2, $4)} }
@@ -51,21 +47,24 @@ stmt_list:
 
 
 elseif_list:
-    /*nothing*/     { [] }  
   | elseif_list elseif  { $2 :: $1 }
 
 elseif:
   ELSEIF LPAREN expr RPAREN stmt { Elseif($3, List.rev $5) }
 
+
+
 stmt:
     expr SEMI                          { Expr $1 }
+  | vdecl                              { Vdecl $1}
   | LBRACE stmt_list RBRACE            { Block(List.rev $2) }
-  | RETURN SEMI               { Return Noexpr } /*is it needed?*/
   | RETURN expr SEMI          { Return($2) }
-  
+
+  | IF LPAREN expr RPAREN stmt %prec NOELSE  { If($3, $5, [Block([])], [Block([])]) }
   | IF LPAREN expr RPAREN stmt elseif_list ENDELIF %prec NOELSE  { If($3, $5, $6, [Block([])]) }
 /* we do not want to use endelif */
-  | IF LPAREN expr RPAREN stmt elseif_list ENDELIF ELSE stmt  { If($3, $5, $6, $9) }
+  | IF LPAREN expr RPAREN stmt ELSE stmt  { If($3, $5, [Block([])], $7) }
+  | IF LPAREN expr RPAREN stmt elseif_list ELSE stmt  { If($3, $5, $6, $8) }
   
   | FOR LPAREN expr_opt SEMI expr SEMI expr_opt RPAREN stmt { For($3, $5, $7, $9) }
   | FOR LPAREN expr IN expr RPAREN stmt { Foreach($3, $5, $7)}
@@ -73,13 +72,13 @@ stmt:
   | BREAK SEMI  {Break}
   | CONTINUE SEMI  {Continue}
 
+
 fdecl:
-   typ ID LPAREN formals_opt RPAREN LBRACE vdecl_list stmt_list RBRACE
+   typ ID LPAREN formals_opt RPAREN LBRACE stmt_list RBRACE
      { { typ = $1;
 	 fname = $2;
 	 formals = $4;
-	 locals = List.rev $7;
-	 body = List.rev $8 } }
+	 body = List.rev $7 } }
 
 formals_opt:
     /* nothing */ { [] }

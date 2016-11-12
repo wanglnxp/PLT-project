@@ -22,7 +22,8 @@ type expr =
   | Noexpr
 
 type stmt =
-    Block of stmt list
+    Vdecl of vdecl
+  | Block of stmt list
   | Expr of expr
   | Return of expr
   | If of expr * stmt * stmt * stmt
@@ -49,11 +50,10 @@ type func_decl = {
     typ : typ;
     fname : string; (* Name of the function *) 
     formals : formal list; (* Formal argument names *) 
-    locals : vdecl list; (* Locally defined variables *) 
     body : stmt list;
   }
 
-type program = vdecl list * stmt list * func_decl list
+type program = stmt list * func_decl list
 
 (* Pretty-printing functions *)
 
