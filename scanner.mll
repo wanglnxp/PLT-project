@@ -45,6 +45,8 @@ rule token = parse
 | "string" { STR }
 | "void"   { VOID }
 | "list"   { LIST }
+| "point"    { POINT }
+| "line"   { LINE }
 (*| "class"  { CLASS }*)
 
 | "True"   { TRUE }

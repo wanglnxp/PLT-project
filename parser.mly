@@ -5,7 +5,8 @@ open Ast
 %token SEMI LPAREN RPAREN LBRACKET RBRACKET LBRACE RBRACE COMMA DOT
 %token PLUS MINUS TIMES DIVIDE MOD ASSIGN NOT
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
-%token RETURN IF ELSE ELSEIF FOR IN WHILE BREAK CONTINUE NUM STR BOOL VOID ENDELIF
+%token RETURN IF ELSE ELSEIF FOR IN WHILE BREAK CONTINUE 
+%token NUM STR BOOL VOID POINT LINE
 %token LIST NULL /*CLASS*/
 %token <float> LITERAL
 %token <string> ID
@@ -61,8 +62,6 @@ stmt:
   | RETURN expr SEMI          { Return($2) }
 
   | IF LPAREN expr RPAREN stmt %prec NOELSE  { If($3, $5, [Block([])], [Block([])]) }
-  | IF LPAREN expr RPAREN stmt elseif_list ENDELIF %prec NOELSE  { If($3, $5, $6, [Block([])]) }
-/* we do not want to use endelif */
   | IF LPAREN expr RPAREN stmt ELSE stmt  { If($3, $5, [Block([])], $7) }
   | IF LPAREN expr RPAREN stmt elseif_list ELSE stmt  { If($3, $5, $6, $8) }
   
@@ -94,7 +93,14 @@ typ:
   | STR  { Str }
   | VOID { Void }
   | LIST { List }
+  | POINT{ Pot } 
+  | LINE { Lin }
 
+point:
+    LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN  { {x_ax=$2; y_ax=$4; form=$6 color=$8 } }
+
+line:
+    LPAREN LPAREN expr COMMA expr RPAREN COMMA LPAREN expr COMMA expr RPAREN COMMA expr COMMA expr RPAREN  { {start=($3,$5); end=($9,$11); form=$14 color=$16 } }
 
 expr_opt:
     /* nothing */ { Noexpr }
@@ -106,7 +112,14 @@ expr:
   | TRUE             { BoolLit(true) }
   | FALSE            { BoolLit(false) }
   | ID               { Id($1) }
+  | point            { Point($1) }
+  | line             { Line($1) }
+  | ID DOT ID        { Objmem($1, $3) }  /*line.color*/
+  | ID DOT ID ASSIGN expr { Dotassign($1, $3, $5) }
+  | ID DOT ID ASSIGN LPAREN expr COMMA expr RPAREN { Lineassign($1, $3, $6, $8) }
+
   | NULL             { Noexpr }
+  /*| LPAREN expr RPAREN { $2 } */
   | expr PLUS   expr { Binop($1, Add,   $3) }
   | expr MINUS  expr { Binop($1, Sub,   $3) }
   | expr TIMES  expr { Binop($1, Mult,  $3) }
@@ -122,8 +135,8 @@ expr:
   | expr OR     expr { Binop($1, Or,    $3) }
   | MINUS expr %prec NEG { Unop(Neg, $2) }
   | NOT expr         { Unop(Not, $2) }
-
   | ID ASSIGN expr   { Assign($1, $3) }
+
   | ID LBRACKET expr RBRACKET ASSIGN expr    { ListAssign($1, $3, $6) }
   | ID LBRACKET expr RBRACKET { Mem($1, $3) }
   | LBRACKET list_opt RBRACKET { List($2) }

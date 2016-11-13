@@ -11,7 +11,7 @@ module TypMap = Map.Make(Typ)
 
    Check each global variable, then check each function *)
 
-let check (globals, _, functions) =
+let check (statements, functions) =
 
   (* Raise an exception if the given list has a duplicate *)
   let report_duplicate exceptf list =
@@ -36,6 +36,18 @@ let check (globals, _, functions) =
    
   (* add list check *)
 
+  (*separate variable and statement*)
+  let symbols = List.fold_left (fun m (t, n) -> StringMap.add n t m)
+  StringMap.empty (globals @ func.formals @ func.locals )
+  
+  let check = function
+  vdecl
+  | _ ->
+
+  let globals = StringMap.empty in let statements = StringMap.empty in
+  let separate s = List.fold_left (fun m-> if m is vdecl then  ) StringMap.empty statements 
+  in
+
   (**** Checking Global Variables ****)
 
   List.iter (check_not_void (fun n -> "illegal void global " ^ n)) globals;
@@ -54,9 +66,9 @@ let check (globals, _, functions) =
 
   (* Function declaration for a named function *)
   let built_in_decls =  StringMap.add "print"
-     { typ = Void; fname = "print"; formals = [(Int, "x")];
-       locals = []; body = [] } (StringMap.singleton "printb"
-     { typ = Void; fname = "printb"; formals = [(Bool, "x")];
+     { typ = Void; fname = "print"; formals = [(String, "x")];
+        body = [] } (StringMap.singleton "plot"
+     { typ = Void; fname = "plot"; formals = [(List, "x");(List, "y");(String, "z")];
        locals = []; body = [] })
    in
      
@@ -67,8 +79,6 @@ let check (globals, _, functions) =
   let function_decl s = try StringMap.find s function_decls
        with Not_found -> raise (Failure ("unrecognized function " ^ s))
   in
-
-  let _ = function_decl "main" in (* Ensure "main" is defined *)
 
   let check_function func =
 
@@ -81,8 +91,7 @@ let check (globals, _, functions) =
     List.iter (check_not_void (fun n -> "illegal void local " ^ n ^
       " in " ^ func.fname)) func.locals;
 
-    report_duplicate (fun n -> "duplicate local " ^ n ^ " in " ^ func.fname)
-      (List.map snd func.locals);
+(* check function local *)
 
     (* Type of each variable (global, formal, or local *)
     let symbols = List.fold_left (fun m (t, n) -> StringMap.add n t m)

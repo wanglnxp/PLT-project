@@ -4,22 +4,41 @@ type op = Add | Sub | Mult | Div | Mod | Equal | Neq | Less | Leq | Greater | Ge
 
 type uop = Neg | Not
 
-type typ = Num | Bool | Str | Void | List
+type typ = Num | Bool | Str | Void | List | Pot | Lin
 
 type expr =
     Number of float (* may need int*)
   | String of string
   | BoolLit of bool
   | Id of string
+  | Point of point
+  | Line of line
   | Binop of expr * op * expr
   | Unop of uop * expr
   | Assign of string * expr
   | Call of string * expr list (*function call*)
-  | Objcall of string * string * expr list 
+  | Objcall of string * string * expr list
+  | Objmem of string * string
+  | Dotassign of string * string * expr
+  | Lineassign of string * string * expr * expr
   | List of expr list
   | Mem of string * expr
   | ListAssign of string * expr * expr
   | Noexpr
+
+type point = {
+  x_ax: float;
+  y_ax: float;
+  form: string;
+  color: string;
+}
+
+type line = {
+  start: float * float;
+  end: float * float;
+  form: string;
+  color: string;
+}
 
 type stmt =
     Vdecl of vdecl

@@ -38,7 +38,8 @@ type token =
   | STR
   | BOOL
   | VOID
-  | ENDELIF
+  | POINT
+  | LINE
   | LIST
   | NULL
   | LITERAL of (float)
