@@ -40,7 +40,7 @@ program:
 
 
 vdecl:
-  typ ID ASSIGN expr SEMI { {vtype=$1; vname=$2; value=Assign($2, $4)} }
+  typ ID ASSIGN expr SEMI { Block([Vdecl($1, $2);Expr(Assign($2,$4))]) }
 
 stmt_list:
     /* nothing */   { [] }

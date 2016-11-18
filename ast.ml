@@ -41,7 +41,7 @@ type line = {
 }
 
 type stmt =
-    Vdecl of vdecl
+    Vdecl of datatype * string
   | Block of stmt list
   | Expr of expr
   | Return of expr
@@ -52,13 +52,6 @@ type stmt =
   | While of expr * stmt
   | Break
   | Continue
-
-(* why bind can have no value in micro c*)
-type vdecl = {
-  vtype : datatype;
-  vname : string;
-  value : expr;
-}
 
 type formal = {
   ftype : datatype;
