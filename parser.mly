@@ -98,9 +98,12 @@ typ:
 
 point:
     LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN  { {x_ax=$2; y_ax=$4; form=$6 color=$8 } }
+    /*LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN  { ($2,$4,$6,$8) }*/
+
 
 line:
-    LPAREN LPAREN expr COMMA expr RPAREN COMMA LPAREN expr COMMA expr RPAREN COMMA expr COMMA expr RPAREN  { {start=($3,$5); end=($9,$11); form=$14 color=$16 } }
+    LPAREN LPAREN expr COMMA expr RPAREN COMMA LPAREN expr COMMA expr RPAREN COMMA expr COMMA expr RPAREN  { {star_p=($3,$5); end_p=($9,$11); form=$14 color=$16 } }
+    /*LPAREN LPAREN expr COMMA expr RPAREN COMMA LPAREN expr COMMA expr RPAREN COMMA expr COMMA expr RPAREN  { ($3,$5,$9,$11,$14,$16) }*/
 
 expr_opt:
     /* nothing */ { Noexpr }

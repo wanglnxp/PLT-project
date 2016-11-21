@@ -38,7 +38,7 @@ rule token = parse
 | "return" { RETURN }
 | "break"  { BREAK }
 | "continue" { CONTINUE }
-| "endelif"{ ENDELIF }
+(*| "endelif"{ ENDELIF }*)
 
 | "num"    { NUM }
 | "bool"   { BOOL }
