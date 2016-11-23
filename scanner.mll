@@ -40,7 +40,8 @@ rule token = parse
 | "continue" { CONTINUE }
 (*| "endelif"{ ENDELIF }*)
 
-| "num"    { NUM }
+| "int"    { INT }
+| "float"    { FLOAT }
 | "bool"   { BOOL }
 | "string" { STR }
 | "void"   { VOID }

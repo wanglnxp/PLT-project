@@ -64,7 +64,7 @@ let translate (statements, functions) =
     let function_decl m fdecl =
       let name = fdecl.A.fname
       and formal_types =
-	Array.of_list (List.map (fun (t,_) -> ltype_of_typ t) fdecl.A.formals)
+      Array.of_list (List.map (fun (t,_) -> ltype_of_typ t) fdecl.A.formals)
       in let ftype = L.function_type (ltype_of_typ fdecl.A.typ) formal_types in
       StringMap.add name (L.define_function name ftype the_module, fdecl) m in
     List.fold_left function_decl StringMap.empty functions in
@@ -92,21 +92,34 @@ let translate (statements, functions) =
 	       let local_var = L.build_alloca (ltype_of_typ t) n builder
 	         in StringMap.add n local_var m 
          in
+
       let locals =
+        let rec test pass_list = function
+            [] -> print_endline("empty");pass_list
+          | hd :: tl -> let newlist = 
+                          let match_fuc hd pass_list= match hd with
+                            A.Vdecl (a, b) -> (a, b)::pass_list
+                          | A.Block (a) -> test pass_list a
+                          | _ -> pass_list
+                          in match_fuc hd pass_list
+                        in test newlist tl
+
+        in
         let test_function pass_list head = match head with
             A.Vdecl (a, b) -> (a, b)::pass_list
-          |_ -> pass_list
-        in List.fold_left test_function [] fdecl.A.body
-      in
+          | A.Block (block) ->  print_endline("Length of block: "^string_of_int(List.length block));test pass_list block
+          | _ -> pass_list
+        in List.fold_left test_function [] fdecl.A.body in
+        print_endline("Length of locals: "^string_of_int(List.length locals));
+      
       let formals = List.fold_left2 add_formal StringMap.empty fdecl.A.formals
           (Array.to_list (L.params the_function)) in
-
       List.fold_left add_local formals locals in
-      print_endline(string_of_int(StringMap.cardinal local_vars));
+    (* print_endline(string_of_int(StringMap.cardinal local_vars)); *)
 
     (* Return the value for a variable or formal argument *)
     let lookup n = try StringMap.find n local_vars
-                   with Not_found -> try StringMap.find n global_vars with Not_found -> raise(Failure("No matching pattern in Global_vars access in lookup"))
+                  with Not_found -> try StringMap.find n global_vars with Not_found -> raise(Failure("No matching pattern in Global_vars access in lookup"))
     in
 
     (* Construct code for an expression; return its value *)
