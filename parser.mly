@@ -51,25 +51,24 @@ elseif_list:
   | elseif_list elseif  { $2 :: $1 }
 
 elseif:
-  ELSEIF LPAREN expr RPAREN stmt { Elseif($3, List.rev $5) }
-
+  ELSEIF LPAREN expr RPAREN stmt { Elseif($3, $5) }
 
 
 stmt:
     expr SEMI                          { Expr $1 }
-  | vdecl                              { Vdecl $1}
+  | vdecl                              { $1 }
   | LBRACE stmt_list RBRACE            { Block(List.rev $2) }
   | RETURN expr SEMI          { Return($2) }
 
-  | IF LPAREN expr RPAREN stmt %prec NOELSE  { If($3, $5, [Block([])], [Block([])]) }
-  | IF LPAREN expr RPAREN stmt ELSE stmt  { If($3, $5, [Block([])], $7) }
-  | IF LPAREN expr RPAREN stmt elseif_list ELSE stmt  { If($3, $5, $6, $8) }
+  | IF LPAREN expr RPAREN stmt %prec NOELSE  { If($3, $5, Block([]), Block([])) }
+  | IF LPAREN expr RPAREN stmt ELSE stmt  { If($3, $5, Block([]), $7) }
+  | IF LPAREN expr RPAREN stmt elseif_list ELSE stmt  { If($3, $5,  Block($6), $8) }
   
   | FOR LPAREN expr_opt SEMI expr SEMI expr_opt RPAREN stmt { For($3, $5, $7, $9) }
   | FOR LPAREN expr IN expr RPAREN stmt { Foreach($3, $5, $7)}
   | WHILE LPAREN expr RPAREN stmt  { While($3, $5) }
-  | BREAK SEMI  {Break}
-  | CONTINUE SEMI  {Continue}
+  | BREAK SEMI  { Break }
+  | CONTINUE SEMI  { Continue }
 
 
 fdecl:
@@ -96,13 +95,13 @@ typ:
   | POINT{ Pot } 
   | LINE { Lin }
 
-point:
-    LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN  { {x_ax=$2; y_ax=$4; form=$6 color=$8 } }
+/*point:
+    LPAREN LITERAL COMMA LITERAL COMMA STRING COMMA STRING RPAREN  { {x_ax=$2; y_ax=$4; form=$6 color=$8 } }*/
     /*LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN  { ($2,$4,$6,$8) }*/
 
 
-line:
-    LPAREN LPAREN expr COMMA expr RPAREN COMMA LPAREN expr COMMA expr RPAREN COMMA expr COMMA expr RPAREN  { {star_p=($3,$5); end_p=($9,$11); form=$14 color=$16 } }
+/*line:
+    LPAREN LPAREN expr COMMA expr RPAREN COMMA LPAREN expr COMMA expr RPAREN COMMA expr COMMA expr RPAREN  { {star_p=($3,$5); end_p=($9,$11); form=$14 color=$16 } }*/
     /*LPAREN LPAREN expr COMMA expr RPAREN COMMA LPAREN expr COMMA expr RPAREN COMMA expr COMMA expr RPAREN  { ($3,$5,$9,$11,$14,$16) }*/
 
 expr_opt:
@@ -115,8 +114,8 @@ expr:
   | TRUE             { BoolLit(true) }
   | FALSE            { BoolLit(false) }
   | ID               { Id($1) }
-  | point            { Point($1) }
-  | line             { Line($1) }
+  /*| point            { $1 }*/
+  /*| line             { Line($1) }*/
   | ID DOT ID        { Objmem($1, $3) }  /*line.color*/
   | ID DOT ID ASSIGN expr { Dotassign($1, $3, $5) }
   | ID DOT ID ASSIGN LPAREN expr COMMA expr RPAREN { Lineassign($1, $3, $6, $8) }

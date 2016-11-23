@@ -54,10 +54,7 @@ type stmt =
   | Break
   | Continue
 
-type formal = {
-  ftype : typ;
-  frname : string;
-}
+type formal = typ * string
 
 type func_decl = {
     typ : typ;

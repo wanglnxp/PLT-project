@@ -4,7 +4,7 @@ type stmt =
     Vdecl of string * int
   | Others of string * int
 
-let stlist = [Vdecl("a", 1);Others("a", 2)]
+let stlist = [Vdecl("a", 1);Others("a", 2);Vdecl("b", 2)]
 
 let map1 = StringMap.empty
 let map2 = StringMap.empty
@@ -19,16 +19,32 @@ let rec test pass_map = function
 				in test (check_block hd pass_map) tl
 	|[] -> pass_map
 
+let map1 = test StringMap.empty stlist
 
-let map3 = test StringMap.empty stlist
-
-(* let map1 = StringMap.empty
-let map1 = StringMap.add "a" 1 map1 *)
 let print_users key times =
 	print_int times;
 	print_endline(" " ^ key)
 
-let() = StringMap.iter print_users map3
+let() = StringMap.iter print_users map1
+
+(* let globals =
+    let rec test2 pass_list = function
+      |hd::(tl:stmt list) -> let check_block head temp = match head with
+                                |Vdecl (a, b) ->(a, b)::pass_list
+                                |_ -> pass_list
+                                in test2 (check_block hd pass_list) tl
+      |[] -> pass_list
+    in test2 [] stlist *)
+
+
+let  test_function pass_list head = match head with
+	 Vdecl (a, b) -> (a, b)::pass_list
+	|_ -> pass_list
+
+let globals = List.fold_left test_function [] stlist
+
+let printnew (a,b) = print_string a; print_string " ";print_int b;print_endline("")
+let() = List.iter printnew globals
 
 (* let a =  1
 in
