@@ -35,18 +35,19 @@ let check (statements, functions) =
   in
    
   (* add list check *)
-
   (*separate variable and statement*)
-  let symbols = List.fold_left (fun m (t, n) -> StringMap.add n t m)
-  StringMap.empty (globals @ func.formals @ func.locals )
-  
-  let check = function
-  vdecl
-  | _ ->
 
-  let globals = StringMap.empty in let statements = StringMap.empty in
-  let separate s = List.fold_left (fun m-> if m is vdecl then  ) StringMap.empty statements 
-  in
+  let globals = 
+    let rec test pass_map = function
+    |hd::(tl:stmt list) -> let check_block head temp = match head with
+          |Vdecl (a, b) -> if not (StringMap.mem a temp) then 
+              StringMap.add a b temp
+            else raise (Failure ("Redeclared"))
+          |_ -> pass_map
+        in test (check_block hd pass_map) tl
+    |[] -> pass_map
+    in test StringMap.empty statements
+  in 
 
   (**** Checking Global Variables ****)
 
@@ -105,7 +106,7 @@ let check (statements, functions) =
 
     (* Return the type of an expression or throw an exception *)
     let rec expr = function
-	Literal _ -> Int
+	     Literal _ -> Int
       | BoolLit _ -> Bool
       | Id s -> type_of_identifier s
       | Binop(e1, op, e2) as e -> let t1 = expr e1 and t2 = expr e2 in

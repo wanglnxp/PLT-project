@@ -4,7 +4,7 @@ type op = Add | Sub | Mult | Div | Mod | Equal | Neq | Less | Leq | Greater | Ge
 
 type uop = Neg | Not
 
-type typ = Num | Bool | Str | Void | List | Pot | Lin
+type typ = Int | Float | Bool | Str | Void | List | Pot | Lin
 
 type pot = {
   x_ax: float;
@@ -20,9 +20,10 @@ type line = {
   color: string;
 }
 
-type expr =
-    Number of float (* may need int*)
-  | String of string
+type expr = 
+    Literal of int
+  | FloatLit of float
+  | StringLit of string
   | BoolLit of bool
   | Id of string
   | Point of pot

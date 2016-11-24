@@ -6,11 +6,14 @@ open Ast
 %token PLUS MINUS TIMES DIVIDE MOD ASSIGN NOT
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
 %token RETURN IF ELSE ELSEIF FOR IN WHILE BREAK CONTINUE 
-%token NUM STR BOOL VOID POINT LINE
+%token INT FLOAT STR BOOL VOID POINT LINE
 %token LIST NULL /*CLASS*/
-%token <float> LITERAL
+%token <int> LITERAL
+%token <float> FLOAT_LITERAL
+%token <bool> BOOLEAN_LITERAL
 %token <string> ID
-%token <string> STRING
+%token <string> STRING_LITERAL
+
 %token EOF
 
 %nonassoc NOELSE /*how to use*/
@@ -88,7 +91,8 @@ formal_list:
   | formal_list COMMA typ ID { ($3,$4) :: $1 }
 
 typ:
-    NUM  { Num } /*dont understand*/
+    INT { Int }
+  | FLOAT { Float }
   | BOOL { Bool }
   | STR  { Str }
   | VOID { Void }
@@ -110,10 +114,10 @@ expr_opt:
   | expr          { $1 }
 
 expr:
-    LITERAL          { Number($1) }
-  | STRING           { String($1) }
-  | TRUE             { BoolLit(true) }
-  | FALSE            { BoolLit(false) }
+    LITERAL          { Literal($1) }
+  | FLOAT_LITERAL    { FloatLit($1) }
+  | STRING_LITERAL   { StringLit($1) }
+  | BOOLEAN_LITERAL  { BoolLit($1) }
   | ID               { Id($1) }
   /*| point            { $1 }*/
   /*| line             { Line($1) }*/

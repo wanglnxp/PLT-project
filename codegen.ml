@@ -31,7 +31,8 @@ let translate (statements, functions) =
   | Some x -> x) *)  in
 
   let ltype_of_typ = function
-      A.Num -> flt_t
+      A.Int -> i32_t
+    | A.Float -> flt_t
     | A.Bool -> i1_t
     | A.Str -> L.pointer_type i8_t
     | A.Void -> void_t 
@@ -110,7 +111,6 @@ let translate (statements, functions) =
           | A.Block (block) ->  print_endline("Length of block: "^string_of_int(List.length block));test pass_list block
           | _ -> pass_list
         in List.fold_left test_function [] fdecl.A.body in
-        print_endline("Length of locals: "^string_of_int(List.length locals));
       
       let formals = List.fold_left2 add_formal StringMap.empty fdecl.A.formals
           (Array.to_list (L.params the_function)) in
@@ -125,8 +125,9 @@ let translate (statements, functions) =
     (* Construct code for an expression; return its value *)
     (*builder type*)
     let rec expr builder = function
-        A.Number f  -> L.const_float flt_t f
-      | A.String s -> L.build_global_stringptr s "str" builder
+        A.Literal i -> L.const_int i32_t i
+      | A.FloatLit f  -> L.const_float flt_t f
+      | A.StringLit s -> L.build_global_stringptr s "str" builder
       | A.BoolLit b -> L.const_int i1_t (if b then 1 else 0)
       | A.Noexpr -> L.const_int i32_t 0
       | A.Id s -> L.build_load (lookup s) s builder
