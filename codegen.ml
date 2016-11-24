@@ -76,7 +76,7 @@ let translate (statements, functions) =
                             with Not_found -> raise(Failure("No matching pattern in build_function_body"))in
     let builder = L.builder_at_end context (L.entry_block the_function) in
 
-    let int_format_str = L.build_global_stringptr "%f\n" "fmt" builder 
+    let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder 
     and string_format_str =L.build_global_stringptr "%s\n" "fmt" builder
       in
     
@@ -96,7 +96,7 @@ let translate (statements, functions) =
 
       let locals =
         let rec test pass_list = function
-            [] -> print_endline("empty");pass_list
+            [] -> pass_list
           | hd :: tl -> let newlist = 
                           let match_fuc hd pass_list= match hd with
                             A.Vdecl (a, b) -> (a, b)::pass_list
@@ -108,7 +108,7 @@ let translate (statements, functions) =
         in
         let test_function pass_list head = match head with
             A.Vdecl (a, b) -> (a, b)::pass_list
-          | A.Block (block) ->  print_endline("Length of block: "^string_of_int(List.length block));test pass_list block
+          | A.Block (block) -> test pass_list block
           | _ -> pass_list
         in List.fold_left test_function [] fdecl.A.body in
       
