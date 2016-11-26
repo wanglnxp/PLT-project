@@ -4,7 +4,7 @@
 
 let digit = ['0'-'9']
 let float = '-'?(digit+) ['.'] digit+
-let bool = "True" | "False"
+let bool = "true" | "false"
 
 rule token = parse
   [' ' '\t' '\r' '\n'] { token lexbuf } (* Whitespace *)

@@ -4,5 +4,3 @@ int main()	{
 		print(i);
 	}
 }
-
-
