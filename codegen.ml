@@ -25,7 +25,7 @@ let translate (statements, functions) =
   and i32_t  = L.i32_type  context
   and i8_t   = L.i8_type   context
   and i1_t   = L.i1_type   context
-  and flt_t  = L.float_type context
+  and flt_t  = L.double_type context
   and str_t  = L.pointer_type (L.i8_type context)
   and void_t = L.void_type context 
   (* and idlist_t = L.pointer_type (match L.type_by_name llm "struct.IdList" with
@@ -80,7 +80,7 @@ let translate (statements, functions) =
 
     let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder
     and float_format_str = L.build_global_stringptr "%f\n" "fmt" builder
-    and bool_format_str = L.build_global_stringptr "%s\n" "fmt" builder 
+    and bool_format_str = L.build_global_stringptr "%d ? \"true\" : \"false\"" "fmt" builder 
     and string_format_str = L.build_global_stringptr "%s\n" "fmt" builder
       in
     
@@ -272,13 +272,31 @@ let translate (statements, functions) =
         L.build_call printf_func [| float_format_str ; (expr builder e) |]
          "printf" builder
       | A.Call ("printb", [e]) ->
-        let find_str b = match b with
+        (* let find_str b = match b with
           A.BoolLit b -> if b then "true" else "false"
         | _ -> raise(Failure("Not a bool type"))
           in 
           let str_e = find_str e in
         L.build_call printf_func [| bool_format_str ; (L.build_global_stringptr str_e "str" builder) |]
-	       "printf" builder
+	       "printf" builder *)
+         L.build_call printf_func [| bool_format_str ; (expr builder e) |]
+         "printf" builder
+         (* let a = expr builder e in
+         let b0 = L.const_int i32_t 0 in
+         let b1 = L.const_int i32_t 1 in
+         let c0 = L.const_int i1_t 0 in 
+         let c1 = L.const_int i1_t 1 in
+          let test_u input = match input with
+              (* b0 -> L.build_call printf_func [| bool_format_str ;  (L.build_global_stringptr "false" "str" builder) |]
+          "printf" builder *)
+            (* | b1 -> L.build_call printf_func [| bool_format_str ;  (L.build_global_stringptr "true" "str" builder) |]
+          "printf" builder *)
+            (* | c0 -> L.build_call printf_func [| bool_format_str ;  (L.build_global_stringptr "false" "str" builder) |]
+          "printf" builder *)
+            | c1 -> L.build_call printf_func [| bool_format_str ;  (L.build_global_stringptr "true" "str" builder) |]
+          "printf" builder
+            | _ -> raise(Failure("Not a bool type"))
+        in test_u a *)
       | A.Call ("prints", [e]) -> L.build_call printf_func [| (string_format_str) ; (expr builder e) |]
           "printf" builder
       | A.Call (f, act) ->

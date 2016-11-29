@@ -1,0 +1,14 @@
+int main(){
+	printf(1.1);
+	printb(true);
+	printb(false);
+	print(34);
+	prints("Hello, world!");
+	return 1;
+}
+／*
+bad. 0.000000
+true
+false
+34
+Hello, world!*／

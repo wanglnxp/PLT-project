@@ -24,6 +24,8 @@ rule token = parse
 | '%'      { MOD }
 | '='      { ASSIGN }
 | '.'      { DOT }
+| "+="     { LSTADD }
+| "-="     { LSTRMV }
 | "=="     { EQ }
 | "!="     { NEQ }
 | '<'      { LT }
