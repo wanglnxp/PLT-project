@@ -27,19 +27,22 @@ let check (statements, functions) =
      if lvaluet == rvaluet then lvaluet else raise err
   in
 
+  (* Separate global variable from statements *)
+  (* Only allow variable declaration and assignment*)
   let globals = 
     let rec test pass_list = function
         [] -> pass_list
       | hd :: tl -> let newlist = 
                       let match_fuc hd pass_list= match hd with
                         Vdecl (a, b) -> (a, b)::pass_list
-                      | Expr (a) -> pass_list
+                      | Expr (a) -> (fun x -> match x with Assign _-> pass_list | _ -> raise (Failure ("wrong declare in Block")) ) a
                       | _ -> raise (Failure ("wrong declare in Block"))
                       in match_fuc hd pass_list
       in test newlist tl
     in
         let test_function pass_list head = match head with
             Vdecl (a, b) -> (a, b)::pass_list
+          | Expr (a) -> (fun x -> match x with Assign _-> pass_list | _ -> raise (Failure ("wrong declare in Block")) ) a
           | Block (block) ->  test pass_list block
           | _ -> raise (Failure ("Should not declare other than vdecl"))
         in List.fold_left test_function [] statements
@@ -66,14 +69,14 @@ let check (statements, functions) =
      { typ = Void; fname = "printb"; formals = [(Bool, "x")];
         body = [] })
    in
-   let built_in_decls = StringMap.add "prints"
+   (* let built_in_decls = StringMap.add "prints"
      { typ = Void; fname = "printf"; formals = [(Float, "x")];
         body = [] } built_in_decls
    in
    let built_in_decls = StringMap.add "prints"
      { typ = Void; fname = "prints"; formals = [(Str, "x")];
         body = [] } built_in_decls
-   in
+   in *)
 
   (* Add all function into function_decls *)
   let function_decls = List.fold_left (fun m fd -> StringMap.add fd.fname fd m)

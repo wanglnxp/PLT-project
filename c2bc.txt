@@ -1,0 +1,2 @@
+clang -c -emit-llvm bindings.c
+https://www.wzdftpd.net/blog/ocaml-llvm-01.html

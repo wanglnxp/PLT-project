@@ -34,8 +34,9 @@ open Ast
 %%
 
 start: 
-  program EOF { $1 }
+  program EOF { let (a, b) = $1 in  (a, List.rev b) }
 
+/*How to make sure stmt always before fedcl*/
 program:
     /* nothing */   { [], [] }
   | program stmt { let (a, b) = $1 in ($2 :: a), b }
