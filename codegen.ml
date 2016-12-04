@@ -229,30 +229,31 @@ let translate (statements, functions) =
 
 
     (*print function helper*)
-    let rec gen_type = function
-      A.Literal _          -> A.Int
-    | A.FloatLit _        -> A.Float
-    | A.BoolLit _         -> A.Bool
-    | A.StringLit _       -> A.Str
-    | A.Id s              -> (match (lookup_datatype s) with
-                              |  _ as ty -> ty)
-    | A.Call(s,_)       -> let fdecl = 
-                              List.find (fun x -> x.A.fname = s) functions in
-                              (match fdecl.A.typ with
-                              |  _ as ty -> ty)
-    | A.Binop(e1, _, _)  -> gen_type e1
+    (* let rec gen_type = function
+      A.Literal _    -> A.Int
+    | A.FloatLit _   -> A.Float
+    | A.BoolLit _    -> A.Bool
+    | A.StringLit _  -> A.Str
+    | A.Id s         -> (match (lookup_datatype s) with
+                        |  _ as ty -> ty)
+    | A.Call(s,_)    -> let fdecl = 
+                        List.find (fun x -> x.A.fname = s) functions in
+                        (match fdecl.A.typ with
+                        |  _ as ty -> ty)
+    | A.Binop(e1, _, _) -> gen_type e1
     | A.Unop(_, e1)     -> gen_type e1
     | A.Assign(s, _)    -> gen_type (A.Id(s))
     | A.Noexpr          -> raise (Failure "corrupted tree - Noexpr as a statement")
-    in
-    let format_str x_type=
-        match x_type with
-          A.Int    -> int_format_str
-        | A.Float  -> float_format_str
-        | A.Str -> string_format_str
-        | A.Bool -> int_format_str
+    in *)
+
+    let format_str x_type = match x_type with
+          "i32"    -> int_format_str
+        | "double"  -> float_format_str
+        | "i8*" -> string_format_str
+        | "i1" -> string_format_str
         | _ -> raise (Failure "Invalid printf type")
     in
+
 
     (* Construct code for an expression; return its value *)
     (*builder type*)
@@ -360,9 +361,26 @@ let translate (statements, functions) =
 	                   ignore (L.build_store e' (lookup s) builder); e'
       | A.Call ("print", [e]) ->
         let e' = expr builder e in
-        let e_type = gen_type e in
-        L.build_call printf_func [| format_str e_type ; (expr builder e) |]
-         "printf" builder
+        (* ignore(print_endline(L.string_of_llvalue(d')));
+          let find_bool input = match L.string_of_llvalue(input) with
+
+            "i1 false" -> print_endline("as");L.build_global_stringptr "false" "bool" builder
+          | "i1 true"  -> print_endline("as");L.build_global_stringptr "true" "bool" builder
+          | a -> print_endline("as");L.build_global_stringptr "true" "bool"
+        in
+        let e' = find_bool d' in *)
+
+        let typ_e' = L.string_of_lltype(L.type_of e') in
+        if typ_e' = "i1" then
+          if (L.string_of_llvalue(e')) = "i1 true" then
+        L.build_call printf_func [| format_str typ_e' ; L.build_global_stringptr ("true") "str" builder |] "printf" builder
+          else
+          L.build_call printf_func [| format_str typ_e' ; L.build_global_stringptr ("flase") "str" builder |] "printf" builder
+        else
+        L.build_call printf_func [| format_str typ_e' ; e' |] "printf" builder
+          (* L.build_call printf_func [| int_format_str ; (expr builder e) |]
+          "printf" builder *)
+         
       | A.Call ("test_print_number", [e]) ->
         L.build_call print_number_func [| (expr builder e) |] "print_number" builder
          
@@ -394,7 +412,7 @@ let translate (statements, functions) =
       | A.Foreach _ -> builder
       | A.Break  -> builder
       | A.Continue  -> builder
-      | A.Expr e -> ignore (expr builder e); builder
+      | A.Expr e -> ignore (try expr builder e with Not_found -> raise(Failure("In stmt function Expr error"))); builder
       | A.Return e -> ignore (match fdecl.A.typ with
           A.Void -> L.build_ret_void builder
         | _ -> L.build_ret (expr builder e) builder); builder
@@ -412,38 +430,38 @@ let translate (statements, functions) =
      (L.build_br merge_bb); *)
 
         let else_bb = L.append_block context "else" the_function in
-	 add_terminal (stmt (L.builder_at_end context else_bb) else_stmt)
-	   (L.build_br merge_bb);
+          add_terminal (stmt (L.builder_at_end context else_bb) else_stmt)
+	        (L.build_br merge_bb);
 
-        ignore (L.build_cond_br bool_val then_bb else_bb builder);
-	 L.builder_at_end context merge_bb
+          ignore (L.build_cond_br bool_val then_bb else_bb builder);
+	        L.builder_at_end context merge_bb
 
       | A.While (predicate, body) ->
-	  let pred_bb = L.append_block context "while" the_function in
-	  ignore (L.build_br pred_bb builder);
-
-	  let body_bb = L.append_block context "while_body" the_function in
-	  add_terminal (stmt (L.builder_at_end context body_bb) body)
-	    (L.build_br pred_bb);
-
-	  let pred_builder = L.builder_at_end context pred_bb in
-	  let bool_val = expr pred_builder predicate in
-
-	  let merge_bb = L.append_block context "merge" the_function in
-	  ignore (L.build_cond_br bool_val body_bb merge_bb pred_builder);
-	  L.builder_at_end context merge_bb
+	      let pred_bb = L.append_block context "while" the_function in
+	      ignore (L.build_br pred_bb builder);
+     
+	      let body_bb = L.append_block context "while_body" the_function in
+	      add_terminal (stmt (L.builder_at_end context body_bb) body)
+	        (L.build_br pred_bb);
+     
+	      let pred_builder = L.builder_at_end context pred_bb in
+	      let bool_val = expr pred_builder predicate in
+     
+	      let merge_bb = L.append_block context "merge" the_function in
+	      ignore (L.build_cond_br bool_val body_bb merge_bb pred_builder);
+	      L.builder_at_end context merge_bb
 
       | A.For (e1, e2, e3, body) -> stmt builder
-	    ( A.Block [A.Expr e1 ; A.While (e2, A.Block [body ; A.Expr e3]) ] )
+        ( A.Block [A.Expr e1 ; A.While (e2, A.Block [body ; A.Expr e3]) ] )
 
       | _ -> raise(Failure("No matching pattern in stmt"))
     in
 
     (* Build the code for each statement in the function *)
-    let builder = stmt builder (A.Block fdecl.A.body) in
+    let builder = try stmt builder (A.Block fdecl.A.body) with Not_found -> raise(Failure("stmt function error")) in
 
-    (* Add a return if the last block falls off the end *)
-    add_terminal builder (match fdecl.A.typ with
+      (* Add a return if the last block falls off the end *)
+      add_terminal builder (match fdecl.A.typ with
         A.Void -> L.build_ret_void
       | t -> L.build_ret (L.const_int (ltype_of_typ t) 0))
   in

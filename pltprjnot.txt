@@ -32,3 +32,9 @@ let print_users key times =
 		print_int times;
 	    print_endline(" " ^ key)
 	in StringMap.iter print_users mymap
+
+
+
+String cannot be declared globally, it will be always null pointer
+User cannot call build in function inside a build in function
+

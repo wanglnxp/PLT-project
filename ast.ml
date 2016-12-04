@@ -4,7 +4,7 @@ type op = Add | Sub | Mult | Div | Mod | Equal | Neq | Less | Leq | Greater | Ge
 
 type uop = Neg | Not
 
-type typ = Int | Float | Bool | Str | Void | List | Pot | Lin
+type typ = Int | Float | Bool | Str | Void | ListTyp of typ | Pot | Lin
 
 type pot = {
   x_ax: float;

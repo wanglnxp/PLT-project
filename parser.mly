@@ -97,7 +97,7 @@ typ:
   | BOOL { Bool }
   | STR  { Str }
   | VOID { Void }
-  | LIST { List }
+  | LIST typ { ListTyp($2) }
   | POINT{ Pot } 
   | LINE { Lin }
 
