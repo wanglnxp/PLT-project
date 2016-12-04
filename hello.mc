@@ -1,23 +1,19 @@
 int a = 1;
 bool b;
 float c =2.0;
-string x="sd";
+string x="1234567890";
+string y="1234567890";
 
 
 int foo(){
-	print(a);
+	return 10;
 }
 
 int main()	{
-	foo();
-	string test = "12345";
-	int t = a =5;
-	print(t);
-	x = "hello niubi";
-	print(x);
+	print(foo());
 	print(c);
-	/*test_print_number(1);*/
-	print(1<2);
+	int a = test_print_number(1);
+	print(a);
 	print("hello");
 }
 

@@ -1,6 +1,8 @@
+#include <stdio.h>
+#include <stdlib.h>
 
 int print_number(int a){
-	return 0;
+	return a;
 }
 
 /*struct s {

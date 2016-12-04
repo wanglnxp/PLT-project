@@ -23,10 +23,11 @@ module SymbolsMap = Map.Make(String)
 
 let translate (statements, functions) =
   let context = L.global_context () in
-  let llctx = L.global_context () in
   let the_module = L.create_module context "MicroC" in
+  (* let llctx = L.global_context () in
   let llmem = L.MemoryBuffer.of_file "bindings.bc" in
-  let llm = Llvm_bitreader.parse_bitcode llctx llmem in
+  let llm = Llvm_bitreader.parse_bitcode llctx llmem in *)
+  
   
   let i32_t  = L.i32_type  context
   and i8_t   = L.i8_type   context
@@ -38,6 +39,8 @@ let translate (statements, functions) =
     None -> raise (Invalid_argument "Option.get idlist")
   | Some x -> x) *)  in
 
+  
+  
   let ltype_of_typ input = match input with
       A.Int -> i32_t
     | A.Float -> flt_t
@@ -57,24 +60,9 @@ let translate (statements, functions) =
       | A.Block (a) -> List.fold_left test_function pass_list a
       |_ -> pass_list
     in List.fold_left test_function [] statements
+  in
 
   (* Declare each global variable; remember its value in a map *)
-  (* let global_vars =
-    let global_var m (t, n) =
-      let init_int = L.const_int i32_t 0
-      and init_float = L.const_float flt_t 0.0
-      and init_bool = L.const_int i1_t  0
-      (* and init_str = L.build_global_stringptr "" "str" builder *)
-    in
-    (match t with
-      | A.Int -> StringMap.add n (L.define_global n init_int the_module) m
-      | A.Float -> StringMap.add n (L.define_global n init_float the_module) m
-      | A.Bool -> StringMap.add n (L.define_global n init_bool the_module) m
-      (* | A.Str -> StringMap.add n (L.define_global n init_str the_module) m *)
-    ) in
-
-    List.fold_left global_var StringMap.empty globals in *)
-  in
     let global_vars =
       let global_var m (t, n) =
         let init = L.const_null (ltype_of_typ t)
@@ -82,7 +70,6 @@ let translate (statements, functions) =
       List.fold_left global_var StringMap.empty globals in
 
   (* Global assignment *)
-
   let lookup_global n = try StringMap.find n global_vars 
       with Not_found -> raise(Failure("Global value" ^ n ^" not declared"))
     in
@@ -90,7 +77,7 @@ let translate (statements, functions) =
   let rec global_expr = function
       A.Literal i -> L.const_int i32_t i
     | A.FloatLit f  -> L.const_float flt_t f
-    | A.StringLit s -> (* str_t *) (* L.const_string context s *) L.const_pointer_null str_t
+    | A.StringLit s -> (* str_t *) ignore(L.define_global ("test") (L.const_string context s) the_module ); L.const_pointer_null str_t 
     | A.BoolLit b -> L.const_int i1_t (if b then 1 else 0)
     (* | A.Id s -> L.build_load (lookup_global s) s *)
     | A.Assign (s, e) -> let e' = global_expr e 
@@ -108,6 +95,27 @@ let translate (statements, functions) =
   in
 
   List.iter global_stmt statements;
+
+  let store_str typ name pass_list = match typ with
+      A.Str -> name::pass_list
+    | _ -> pass_list
+  in
+
+  let rec store_str_var pass_list = function
+      A.Block sl -> List.fold_left store_str_var pass_list sl
+    | A.Vdecl (typ, name) -> store_str typ name pass_list
+    | _ -> pass_list
+  in
+  let str_var_list = List.fold_left store_str_var [] statements in
+
+
+  (* let map_str_var name = match typ with
+    | A.StringLit s
+    | A.Assign (s, e) -> lookup s in list  List.mem let e' = global_expr e
+      in let check_empty inp = match value with
+        | patt -> expr
+        | _ -> " "
+      in check_empty e' *)
 
   (* Declare printf(), which the print built-in function will call *)
  
@@ -134,10 +142,13 @@ let translate (statements, functions) =
 
     let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder
     and float_format_str = L.build_global_stringptr "%f\n" "fmt" builder
-    and bool_format_str = L.build_global_stringptr "%d ? \"true\" : \"false\"" "fmt" builder 
+    and bool_format_str = L.build_global_stringptr "%d\n" "fmt" builder 
     and string_format_str = L.build_global_stringptr "%s\n" "fmt" builder
       in
     
+    (*if name == main add check string add string value*)
+
+
     (* Construct the function's "locals": formal arguments and locally
        declared variables.  Allocate each on the stack, initialize their
        value, if appropriate, and remember their values in the "locals" map *)
@@ -354,37 +365,7 @@ let translate (statements, functions) =
          "printf" builder
       | A.Call ("test_print_number", [e]) ->
         L.build_call print_number_func [| (expr builder e) |] "print_number" builder
-      (* | A.Call ("printf", [e]) ->
-        L.build_call printf_func [| float_format_str ; (expr builder e) |]
-         "printf" builder
-      | A.Call ("printb", [e]) -> *)
-        (* let find_str b = match b with
-          A.BoolLit b -> if b then "true" else "false"
-        | _ -> raise(Failure("Not a bool type"))
-          in 
-          let str_e = find_str e in
-        L.build_call printf_func [| bool_format_str ; (L.build_global_stringptr str_e "str" builder) |]
-	       "printf" builder *)
-         (* L.build_call printf_func [| bool_format_str ; (expr builder e) |]
-         "printf" builder *)
-         (* let a = expr builder e in
-         let b0 = L.const_int i32_t 0 in
-         let b1 = L.const_int i32_t 1 in
-         let c0 = L.const_int i1_t 0 in 
-         let c1 = L.const_int i1_t 1 in
-          let test_u input = match input with
-              (* b0 -> L.build_call printf_func [| bool_format_str ;  (L.build_global_stringptr "false" "str" builder) |]
-          "printf" builder *)
-            (* | b1 -> L.build_call printf_func [| bool_format_str ;  (L.build_global_stringptr "true" "str" builder) |]
-          "printf" builder *)
-            (* | c0 -> L.build_call printf_func [| bool_format_str ;  (L.build_global_stringptr "false" "str" builder) |]
-          "printf" builder *)
-            | c1 -> L.build_call printf_func [| bool_format_str ;  (L.build_global_stringptr "true" "str" builder) |]
-          "printf" builder
-            | _ -> raise(Failure("Not a bool type"))
-        in test_u a *)
-      (* | A.Call ("prints", [e]) -> L.build_call printf_func [| (string_format_str) ; (expr builder e) |]
-          "printf" builder *)
+         
       | A.Call (f, act) ->
          let (fdef, fdecl) = try StringMap.find f function_decls 
                             with Not_found -> raise(Failure("Not_found expr in A.Call"))
