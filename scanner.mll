@@ -45,13 +45,14 @@ rule token = parse
 (*| "endelif"{ ENDELIF }*)
 
 | "int"    { INT }
-| "float"    { FLOAT }
+| "float"  { FLOAT }
 | "bool"   { BOOL }
 | "string" { STR }
 | "void"   { VOID }
 | "list"   { LIST }
-| "point"    { POINT }
+| "point"  { POINT }
 | "line"   { LINE }
+| "struct" { STRUCT }
 (*| "class"  { CLASS }*)
 
 | "NULL"   { NULL }

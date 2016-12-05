@@ -4,7 +4,7 @@ open Ast
 
 module StringMap = Map.Make(String)
 
-let check (statements, functions) =
+let check (statements, functions, structs) =
 
   (* Raise an exception if the given list has a duplicate *)
   let report_duplicate exceptf list =

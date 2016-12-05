@@ -7,7 +7,7 @@ open Ast
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
 %token RETURN IF ELSE ELSEIF FOR IN WHILE BREAK CONTINUE 
 %token INT FLOAT STR BOOL VOID POINT LINE
-%token LIST NULL /*CLASS*/
+%token LIST NULL STRUCT /*CLASS*/
 %token <int> LITERAL
 %token <float> FLOAT_LITERAL
 %token <bool> BOOLEAN_LITERAL
@@ -28,24 +28,40 @@ open Ast
 %left MOD
 %right NOT NEG /*should we use nonassoc?*/
 
-%start start
-%type <Ast.program> start
+%start program
+%type <Ast.program> program
 
 %%
 
-start: 
-  program EOF { let (a, b) = $1 in  (a, List.rev b) }
+program: 
+  decls EOF { let (a, b, c) = $1 in  (a, b, c) }
 
 /*How to make sure stmt always before fedcl*/
-program:
-    /* nothing */   { [], [] }
-  | program stmt { let (a, b) = $1 in ($2 :: a), b }
-  | program fdecl { let (a, b) = $1 in a, ($2 :: b) }
+decls:
+    /* nothing */   { [], [], []}
+  | decls stmt { let (a, b, c) = $1 in ($2 :: a), b,c }
+  | decls fdecl { let (a, b, c) = $1 in a, ($2 :: b),c }
+  | decls sdecl { let (a, b, c) = $1 in a,b, ($2 :: c) }
 
+vdecl_list:
+    /* nothing */    { [] }
+  | vdecl_list typ ID SEMI { Vdecl($2, $3) :: $1 }
 
 vdecl:
    typ ID SEMI             { Vdecl($1, $2) }
   |typ ID ASSIGN expr SEMI { Block([Vdecl($1, $2);Expr(Assign($2,$4))]) }
+
+sdecl_list:
+    /* nothing */    { [] }
+  | sdecl_list sdecl { $2 :: $1 }
+
+sdecl:
+  STRUCT ID LBRACKET vdecl_list RBRACKET
+      { {
+      sname = $2;
+      s_stmt_list = List.rev $4;
+      } }
+
 
 stmt_list:
     /* nothing */   { [] }
@@ -100,6 +116,7 @@ typ:
   | LIST typ { ListTyp($2) }
   | POINT{ Pot } 
   | LINE { Lin }
+  | STRUCT ID   { Objecttype($2) }
 
 /*point:
     LPAREN LITERAL COMMA LITERAL COMMA STRING COMMA STRING RPAREN  { {x_ax=$2; y_ax=$4; form=$6 color=$8 } }*/
@@ -122,9 +139,8 @@ expr:
   | ID               { Id($1) }
   /*| point            { $1 }*/
   /*| line             { Line($1) }*/
-  | ID DOT ID        { Objmem($1, $3) }  /*line.color*/
-  | ID DOT ID ASSIGN expr { Dotassign($1, $3, $5) }
-  | ID DOT ID ASSIGN LPAREN expr COMMA expr RPAREN { Lineassign($1, $3, $6, $8) }
+  /*| ID DOT ID ASSIGN expr { Dotassign($1, $3, $5) }
+  | ID DOT ID ASSIGN LPAREN expr COMMA expr RPAREN { Lineassign($1, $3, $6, $8) }*/
 
   | NULL             { Noexpr }
   /*| LPAREN expr RPAREN { $2 } */
@@ -143,8 +159,11 @@ expr:
   | expr OR     expr { Binop($1, Or,    $3) }
   | MINUS expr %prec NEG { Unop(Neg, $2) }
   | NOT expr         { Unop(Not, $2) }
+
   | ID ASSIGN expr   { Assign($1, $3) }
 
+  | ID DOT ID ASSIGN expr {StructAssign($1, $3, $5)}
+  | ID DOT ID        { StructAccess($1, $3) }
   | ID LBRACKET expr RBRACKET ASSIGN expr    { ListAssign($1, $3, $6) }
   | ID LBRACKET expr RBRACKET { Mem($1, $3) }
   | LBRACKET list_opt RBRACKET { List($2) }
@@ -152,7 +171,7 @@ expr:
   | ID LPAREN list_opt RPAREN { Call($1, $3) }
   | LPAREN expr RPAREN { $2 }
 
-  | ID DOT ID LPAREN list_opt RPAREN { Objcall($1, $3, $5) }
+  /*| ID DOT ID LPAREN list_opt RPAREN { Objcall($1, $3, $5) }*/
 
 list_opt:
     /*nothing*/  { [] }

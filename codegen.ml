@@ -12,6 +12,8 @@ http://llvm.moe/ocaml/
 
 *)
 
+open Llvm
+open Ast
 
 module L = Llvm
 module A = Ast
@@ -20,8 +22,14 @@ module StringMap = Map.Make(String)
 module SymbolsMap = Map.Make(String)
 
 
+let struct_types:(string, lltype) Hashtbl.t = Hashtbl.create 10
+let struct_datatypes:(string, string) Hashtbl.t = Hashtbl.create 10
+let struct_field_indexes:(string, int) Hashtbl.t = Hashtbl.create 50
+let struct_field_datatypes:(string, typ) Hashtbl.t = Hashtbl.create 50
+let struct_name_list:(string,string list) Hashtbl.t = Hashtbl.create 50
+let struct_type_list:(string,typ list) Hashtbl.t = Hashtbl.create 50
 
-let translate (statements, functions) =
+let translate (statements, functions, structs) =
   let context = L.global_context () in
   let the_module = L.create_module context "MicroC" in
   (* let llctx = L.global_context () in
@@ -39,19 +47,80 @@ let translate (statements, functions) =
     None -> raise (Invalid_argument "Option.get idlist")
   | Some x -> x) *)  in
 
-  
+  let find_struct name =
+    try Hashtbl.find struct_types name
+    with | Not_found ->  raise (Failure ("Struct not found")) in
+
   
   let ltype_of_typ input = match input with
-      A.Int -> i32_t
+      A.Int   -> i32_t
     | A.Float -> flt_t
-    | A.Bool -> i1_t
-    | A.Void -> void_t 
-    | A.Str -> str_t
+    | A.Bool  -> i1_t
+    | A.Void  -> void_t 
+    | A.Str   -> str_t
+    | A.Objecttype(struct_name) -> L.pointer_type(find_struct struct_name)
     | _ -> raise(Failure("No matching pattern in ltype_of_typ"))
     (* | A.List _ -> idlist_t  *)
   in
 
     (* A.StringLit s -> L.build_global_stringptr s "str" builder *)
+
+
+  (*Define the structs and its fields' datatype, storing in struct_types and struct_field_datatypes*)
+    let struct_decl_stub sdecl =
+      let struct_t = L.named_struct_type context sdecl.A.sname in (*make llvm for this struct type*)
+        Hashtbl.add struct_types sdecl.sname struct_t;  (* add to map name vs llvm_stuct_type *)
+    in
+
+    let struct_decl_field_datatypes sdecl =
+          let svar_decl_list =
+            let rec test_function pass_list head = match head with
+                A.Vdecl (a, b) -> (a, b)::pass_list
+                | A.Block (a) -> List.fold_left test_function pass_list a
+                |_ -> pass_list
+            in List.fold_left test_function [] sdecl.A.s_stmt_list
+          in
+
+      let type_list = List.map (fun (t,_) -> t) svar_decl_list in (*map the datatypes*)
+      let name_list = List.map (fun (_,n) -> n) svar_decl_list in (*map the names*)
+  (* Add key all fields in the struct *)
+      ignore(
+        List.map2 (fun f t -> 
+          let n = sdecl.sname ^ "." ^ f in
+          Hashtbl.add struct_field_datatypes n t; (*add name, datatype*)  
+        ) name_list type_list;
+        );
+        Hashtbl.add struct_name_list sdecl.A.sname name_list;
+        Hashtbl.add struct_type_list sdecl.A.sname type_list;
+
+    in
+
+    let struct_decl sdecl =
+          let svar_decl_list =
+            let rec test_function pass_list head = match head with
+                A.Vdecl (a, b) -> (a, b)::pass_list
+                | A.Block (a) -> List.fold_left test_function pass_list a
+                |_ -> pass_list
+            in List.fold_left test_function [] sdecl.A.s_stmt_list
+          in
+
+      let struct_t = Hashtbl.find struct_types sdecl.sname in (*get llvm struct_t code for it*)
+      let type_list = List.map (fun (t,_) -> ltype_of_typ t) svar_decl_list in (*map the datatypes*)
+      let name_list = List.map (fun (_,n) -> n) svar_decl_list in (*map the names*)
+      let type_list = i32_t :: type_list in
+      let name_list = ".k" :: name_list in
+      let type_array = (Array.of_list type_list) in
+      List.iteri (fun i f ->
+        let n = sdecl.sname ^ "." ^ f in
+        Hashtbl.add struct_field_indexes n i; (*add to name struct_field_indices*)
+      ) name_list;
+    L.struct_set_body struct_t type_array true
+  in
+  
+  (* Add var_types for each struct so we can create it *)
+  let _ = List.map (fun s -> struct_decl_stub s) structs in
+  let _ = List.map (fun s -> struct_decl s) structs in
+  let _ = List.map (fun s -> struct_decl_field_datatypes s) structs in
 
   (*take out globals*)
   let globals =
@@ -158,10 +227,27 @@ let translate (statements, functions) =
 	       ignore (L.build_store p local builder);
 	       StringMap.add n local m in
 
+    (* let local_vars =
+      let add_formal m (t, n) p = L.set_value_name n p;
+        let formal = match t with
+                |Objecttype(struct_n) ->
+                    ignore(Hashtbl.add struct_datatypes n struct_n);  (* add to map name vs type *)
+                    (* find_struct struct_n *) L.build_alloca (ltype_of_typ t) n builder
+                | _ -> let local = L.build_alloca (ltype_of_typ t) n builder in
+                      ignore (L.build_store p local builder); local
+          in
+         StringMap.add n formal m in *)
+
       let add_local m (t, n) =
-	       let local_var = L.build_alloca (ltype_of_typ t) n builder
-	         in StringMap.add n local_var m 
-         in
+	       let local_t = match t with
+                |Objecttype(struct_n) ->
+                    ignore(Hashtbl.add struct_datatypes n struct_n);  (* add to map name vs type *)
+                    find_struct struct_n
+                | _ -> ltype_of_typ t
+          in
+          let llvm_for_allocation = L.build_alloca local_t n builder in
+        StringMap.add n llvm_for_allocation m
+      in
 
       let locals =
         let rec test pass_list = function
@@ -243,6 +329,12 @@ let translate (statements, functions) =
     | A.Binop(e1, _, _) -> gen_type e1
     | A.Unop(_, e1)     -> gen_type e1
     | A.Assign(s, _)    -> gen_type (A.Id(s))
+    | A.StructAccess(var, field) -> (match (lookup_struct_datatype(var,field)) with
+                                    |A.Bool -> A.Bool
+                                    |A.Float -> A.Float
+                                    |A.Str -> A.Str
+                                    |_ -> raise(Failure "No match struct type")
+                                    )
     | A.Noexpr          -> raise (Failure "corrupted tree - Noexpr as a statement")
     in *)
 
@@ -301,6 +393,33 @@ let translate (statements, functions) =
       )
     in
 
+    (* Return the datatype for a struct *)
+    let lookup_struct_datatype(id, field) = 
+      let struct_name = Hashtbl.find struct_datatypes id in (*gets name of struct*)
+      let search_term = ( struct_name ^ "." ^ field) in (*builds struct_name.field*)
+      let my_datatype = Hashtbl.find struct_field_datatypes search_term in (*get datatype*)
+      my_datatype
+    in
+
+    (*Struct access function*)
+    let struct_access struct_id struct_field isAssign builder = (*id field*)
+      let struct_name = Hashtbl.find struct_datatypes struct_id 
+    in
+        let search_term = (struct_name ^ "." ^ struct_field) in
+        let field_index =try Hashtbl.find struct_field_indexes search_term
+        with Not_found ->raise(Failure(search_term^""))
+        in
+      let _val = L.build_struct_gep (lookup struct_id) field_index struct_field builder in
+      let _val =
+        if isAssign then
+                build_load _val struct_field builder
+            else
+          _val
+      in
+      _val
+    in
+
+
     let rec expr builder = function
         A.Literal i -> L.const_int i32_t i
       | A.FloatLit f  -> L.const_float flt_t f
@@ -308,6 +427,9 @@ let translate (statements, functions) =
       | A.BoolLit b -> L.const_int i1_t (if b then 1 else 0)
       | A.Noexpr -> L.const_int i32_t 0
       | A.Id s -> L.build_load (lookup s) s builder
+      | A.StructAccess (id,field) -> (
+            struct_access id field true builder
+        )
       | A.Binop (e1, op, e2) ->
 	       let e1' = expr builder e1
 	       and e2' = expr builder e2 in
@@ -338,6 +460,15 @@ let translate (statements, functions) =
                         | A.Float -> (float_binops op) e1' e2' "tmp" builder
                         |_ -> raise (Failure "Invalid Type of ID binop")
                     ))
+            | A.StructAccess(id, field) ->(
+              let my_datatype = lookup_struct_datatype(id,field) in (*get datatype*)
+                  (match my_datatype with
+                  | A.Bool -> (bool_binops op) e1' e2' "tmp" builder
+                  | A.Int -> (int_binops op) e1' e2' "tmp" builder
+                  | A.Float -> (float_binops op) e1' e2' "tmp" builder
+                  | _ ->  raise (Failure "Invalid Types of Struct binop")
+                )
+              )
             |_ -> raise (Failure "Invalid Binop e1 Type")
             )
       | A.Unop(op, e) ->
@@ -348,17 +479,28 @@ let translate (statements, functions) =
                      A.FloatLit f -> L.build_fneg
                     |A.Literal i -> L.build_neg
                     |A.Id s ->
-                            let mytyp = lookup_datatype s in
-                            (match mytyp with
-                                 A.Int -> L.build_neg
-                                |A.Float -> L.build_fneg
-                                | _ -> raise (Failure "Invalid Unop id type")
-                            )
+                      let mytyp = lookup_datatype s in
+                        (match mytyp with
+                           A.Int -> L.build_neg
+                          |A.Float -> L.build_fneg
+                          | _ -> raise (Failure "Invalid Unop id type")
+                        )
+                    | A.StructAccess(id,field) ->(
+                      let my_datatype = lookup_struct_datatype(id,field) in (*get datatype*)
+                        match my_datatype with
+                        | A.Int -> L.build_neg
+                        | A.Float -> L.build_fneg
+                        | _ ->  raise (Failure "Invalid Types of Struct binop")
+                        )
                     | _ -> raise (Failure "Invalid Unop type")
                  )
           | A.Not     -> L.build_not) e' "tmp" builder
       | A.Assign (s, e) -> let e' = expr builder e in
 	                   ignore (L.build_store e' (lookup s) builder); e'
+      | A.StructAssign (id, field, e) -> 
+                            let e' = expr builder e in
+                            let des =(struct_access id field false builder) in
+                            ignore (L.build_store e' des builder);e'
       | A.Call ("print", [e]) ->
         let e' = expr builder e in
         (* ignore(print_endline(L.string_of_llvalue(d')));

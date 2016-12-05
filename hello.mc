@@ -1,12 +1,13 @@
-int a = 2;
+struct person[
+	string name;
+	int age;
+]
 
-int foo(int a){
-	return a;
-}
 
-int main()	{
-	print(print(3<2));
-	print(print("asdfs"));
+int main(){
+	struct person a;
+	a.name = "Good";
+	print(a.name);
 
 }
 

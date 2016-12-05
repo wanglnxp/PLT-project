@@ -4,7 +4,7 @@ type op = Add | Sub | Mult | Div | Mod | Equal | Neq | Less | Leq | Greater | Ge
 
 type uop = Neg | Not
 
-type typ = Int | Float | Bool | Str | Void | ListTyp of typ | Pot | Lin
+type typ = Int | Float | Bool | Str | Void | ListTyp of typ | Pot | Lin | Objecttype of string
 
 type pot = {
   x_ax: float;
@@ -32,13 +32,14 @@ type expr =
   | Unop of uop * expr
   | Assign of string * expr
   | Call of string * expr list (*function call*)
-  | Objcall of string * string * expr list
-  | Objmem of string * string
+(*   | Objcall of string * string * expr list
   | Dotassign of string * string * expr
-  | Lineassign of string * string * expr * expr
+  | Lineassign of string * string * expr * expr *)
   | List of expr list
   | Mem of string * expr
   | ListAssign of string * expr * expr
+  | StructAssign of string * string * expr
+  | StructAccess of string * string
   | Noexpr
 
 
@@ -64,5 +65,10 @@ type func_decl = {
     body : stmt list;
   }
 
-type program = stmt list * func_decl list
+type s_decl = {
+    sname : string;
+    s_stmt_list : stmt list;
+  }
+
+type program = stmt list * func_decl list * s_decl list
 

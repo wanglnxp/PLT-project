@@ -36,5 +36,6 @@ let print_users key times =
 
 
 String cannot be declared globally, it will be always null pointer
-User cannot call build in function inside a build in function
+
+secant check : struct inside cannot have assignment. struct should not directly assigned. e.g. Person = {int i =1; int j = 5;}
 
