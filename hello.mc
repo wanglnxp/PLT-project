@@ -3,11 +3,24 @@ struct person[
 	int age;
 ]
 
+/*int fun(string sss){
+	sss = "a";
+	return 0;
+}*/
+
+int change(int a){
+	a = a+1;
+	void b;
+	return a;
+}
 
 int main(){
 	struct person a;
-	a.name = "Good";
-	print(a.name);
+	struct person b;
+	a.name = "100";
+	b.name = "200";
+	int bbb = 0;
+	change(bbb);
 
 }
 

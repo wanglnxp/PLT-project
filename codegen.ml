@@ -58,7 +58,7 @@ let translate (statements, functions, structs) =
     | A.Bool  -> i1_t
     | A.Void  -> void_t 
     | A.Str   -> str_t
-    | A.Objecttype(struct_name) -> L.pointer_type(find_struct struct_name)
+    | A.Objecttype(struct_name) -> L.pointer_type (find_struct struct_name)
     | _ -> raise(Failure("No matching pattern in ltype_of_typ"))
     (* | A.List _ -> idlist_t  *)
   in
@@ -75,7 +75,7 @@ let translate (statements, functions, structs) =
     let struct_decl_field_datatypes sdecl =
           let svar_decl_list =
             let rec test_function pass_list head = match head with
-                A.Vdecl (a, b) -> (a, b)::pass_list
+                A.Vdecl (t, n) -> (t, n)::pass_list
                 | A.Block (a) -> List.fold_left test_function pass_list a
                 |_ -> pass_list
             in List.fold_left test_function [] sdecl.A.s_stmt_list
@@ -98,7 +98,7 @@ let translate (statements, functions, structs) =
     let struct_decl sdecl =
           let svar_decl_list =
             let rec test_function pass_list head = match head with
-                A.Vdecl (a, b) -> (a, b)::pass_list
+                A.Vdecl (t, n) -> (t, n)::pass_list
                 | A.Block (a) -> List.fold_left test_function pass_list a
                 |_ -> pass_list
             in List.fold_left test_function [] sdecl.A.s_stmt_list
@@ -131,6 +131,9 @@ let translate (statements, functions, structs) =
     in List.fold_left test_function [] statements
   in
 
+(*   let add_map map (n, t) = StringMap.add n t map in
+ *)  let global_map = List.fold_left (fun map (t, n) -> StringMap.add n t map) StringMap.empty globals
+  in
   (* Declare each global variable; remember its value in a map *)
     let global_vars =
       let global_var m (t, n) =
@@ -146,13 +149,18 @@ let translate (statements, functions, structs) =
   let rec global_expr = function
       A.Literal i -> L.const_int i32_t i
     | A.FloatLit f  -> L.const_float flt_t f
-    | A.StringLit s -> (* str_t *) ignore(L.define_global ("test") (L.const_string context s) the_module ); L.const_pointer_null str_t 
+    | A.StringLit s -> (* str_t *) (* ignore(L.define_global ("test") (L.const_stringz context s) the_module );  *) L.const_pointer_null str_t (* L.const_stringz context s *)
     | A.BoolLit b -> L.const_int i1_t (if b then 1 else 0)
     (* | A.Id s -> L.build_load (lookup_global s) s *)
     | A.Assign (s, e) -> let e' = global_expr e 
-                    and gl = lookup_global s in
-                    ignore (L.delete_global gl);
-                    ignore (L.define_global s e' the_module); e'
+                    and gl = lookup_global s
+                    and t = StringMap.find s global_map in
+                    (* match t with 
+                    | A.Str ->(ignore (L.delete_global gl);
+                      ignore(L.define_global s (e') the_module ); e')
+                    | _ -> *)(ignore (L.delete_global gl);
+                        ignore (L.define_global s e' the_module); e')
+
     | _ -> raise(Failure("Expression not allowed in global"))
   in
 
@@ -343,7 +351,7 @@ let translate (statements, functions, structs) =
         | "double"  -> float_format_str
         | "i8*" -> string_format_str
         | "i1" -> string_format_str
-        | _ -> raise (Failure "Invalid printf type")
+        | _ -> (* string_format_str *) raise (Failure "Invalid printf type")
     in
 
 
@@ -427,7 +435,8 @@ let translate (statements, functions, structs) =
       | A.BoolLit b -> L.const_int i1_t (if b then 1 else 0)
       | A.Noexpr -> L.const_int i32_t 0
       | A.Id s -> L.build_load (lookup s) s builder
-      | A.StructAccess (id,field) -> (
+      | A.StructAccess (id,field) -> 
+      ignore(print_endline("; SAccess"^id));(
             struct_access id field true builder
         )
       | A.Binop (e1, op, e2) ->
@@ -502,6 +511,7 @@ let translate (statements, functions, structs) =
                             let des =(struct_access id field false builder) in
                             ignore (L.build_store e' des builder);e'
       | A.Call ("print", [e]) ->
+      ignore(print_endline("; print"));
         let e' = expr builder e in
         (* ignore(print_endline(L.string_of_llvalue(d')));
           let find_bool input = match L.string_of_llvalue(input) with
@@ -513,7 +523,8 @@ let translate (statements, functions, structs) =
         let e' = find_bool d' in *)
 
         let typ_e' = L.string_of_lltype(L.type_of e') in
-        if typ_e' = "i1" then
+(*         print_endline(typ_e');
+ *)        if typ_e' = "i1" then
           if (L.string_of_llvalue(e')) = "i1 true" then
         L.build_call printf_func [| format_str typ_e' ; L.build_global_stringptr ("true") "str" builder |] "printf" builder
           else
@@ -549,13 +560,13 @@ let translate (statements, functions, structs) =
        the statement's successor *)
     let rec stmt builder = function
         A.Block sl -> List.fold_left stmt builder sl
-      | A.Vdecl _ -> builder
+      | A.Vdecl (t, n) -> ignore(print_endline("; Vdecl "^n));builder
       | A.Elseif _ -> builder
       | A.Foreach _ -> builder
       | A.Break  -> builder
       | A.Continue  -> builder
       | A.Expr e -> ignore (try expr builder e with Not_found -> raise(Failure("In stmt function Expr error"))); builder
-      | A.Return e -> ignore (match fdecl.A.typ with
+      | A.Return e -> ignore(print_endline("; Return")); ignore (match fdecl.A.typ with
           A.Void -> L.build_ret_void builder
         | _ -> L.build_ret (expr builder e) builder); builder
 

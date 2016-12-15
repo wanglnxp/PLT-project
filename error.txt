@@ -1,0 +1,32 @@
+string abc(string b){
+	return b;
+}
+
+error: 
+Assertion failed: (isa<X>(Val) && "cast<Ty>() argument of incompatible type!"), function cast, file /private/tmp/llvm37-20160716-78788-1j8zkz5/llvm-3.7.1.src/include/llvm/Support/Casting.h, line 237.
+
+
+struct person[
+	string name;
+	int age;
+]
+int strct(struct person sss){
+	sss.age = 0;
+	return 0;
+}
+
+
+error:
+Fatal error: exception Failure("In stmt function Expr error")
+'main' function not found in module.
+
+
+string abc = "abc";
+int main(){
+	print(abc);
+}
+
+Result:
+
+(null)
+

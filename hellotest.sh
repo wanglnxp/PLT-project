@@ -1,12 +1,16 @@
 # Hello World
+
 make
+var=$1
+echo $var
+
 read -p "Let's see some Hello World action. Please any key to continue."
 
 echo "Result:"
 echo
 
 clang -S -emit-llvm ./list.c
-./microc.native < hello.mc > demo.ll
+./microc.native < $1 > demo.ll
 /usr/local/opt/llvm/bin/llvm-link demo.ll list.ll -o a.out
 /usr/local/opt/llvm/bin/lli a.out
 

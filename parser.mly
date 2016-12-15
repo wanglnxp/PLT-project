@@ -34,7 +34,7 @@ open Ast
 %%
 
 program: 
-  decls EOF { let (a, b, c) = $1 in  (a, b, c) }
+  decls EOF { let (a, b, c) = $1 in  (a, List.rev b, c) }
 
 /*How to make sure stmt always before fedcl*/
 decls:

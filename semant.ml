@@ -88,13 +88,27 @@ let check (statements, functions, structs) =
        with Not_found -> raise (Failure ("unrecognized function " ^ s))
   in
 
+  let _ = function_decl "main" in (* Ensure "main" is defined *)
+
   let check_function func =
+
+    (* Get all function locals*)
+    let func_locals = 
+      let rec get_local pass_list head = match head with
+          Vdecl (typ, name) -> (typ, name)::pass_list
+        | Block (block) -> List.fold_left get_local pass_list block
+        | _ -> pass_list
+      in List.fold_left get_local [] func.body
+    in
 
     List.iter (check_not_void (fun n -> "illegal void formal " ^ n ^
       " in " ^ func.fname)) func.formals;
 
-    report_duplicate (fun n -> "duplicate formal " ^ n ^ " in " ^ func.fname)
-      (List.map snd func.formals);
+    List.iter (check_not_void (fun n -> "illegal void local " ^ n ^
+      " in " ^ func.fname)) func_locals;
+
+    report_duplicate (fun n -> "duplicate formal or local " ^ n ^ " in function " ^ func.fname ^ "()")
+      (List.map snd (func.formals@func_locals));
 
     (* check function local *)
     (* let fun_local = 
