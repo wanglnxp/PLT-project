@@ -10,7 +10,8 @@ struct person[
 
 int change(int a){
 	a = a+1;
-	void b;
+	int b;
+	b = 100;
 	return a;
 }
 

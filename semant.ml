@@ -110,6 +110,18 @@ let check (statements, functions, structs) =
     report_duplicate (fun n -> "duplicate formal or local " ^ n ^ " in function " ^ func.fname ^ "()")
       (List.map snd (func.formals@func_locals));
 
+    let local_syb = List.fold_left (fun m (t, n) -> StringMap.add n t m)
+      StringMap.empty (func.formals @ func_locals )
+    and glob_syb = List.fold_left (fun m (t, n) -> StringMap.add n t m)
+      StringMap.empty (globals)
+    in
+
+    let type_of_identifier s map=
+      try StringMap.find s map
+      with Not_found -> raise (Failure ("undeclared identifier " ^ s))
+    in
+    report_duplicate (fun n -> "duplicate formal or local " ^ n ^ " in function " ^ func.fname ^ "()")
+      (List.map snd (func.formals@func_locals));
     (* check function local *)
     (* let fun_local = 
       let rec test_function pass_list head = match head with
