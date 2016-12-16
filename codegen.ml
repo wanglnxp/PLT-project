@@ -412,10 +412,10 @@ let translate (statements, functions, structs) =
     (*Struct access function*)
     let struct_access struct_id struct_field isAssign builder = (*id field*)
       let struct_name = Hashtbl.find struct_datatypes struct_id 
-    in
+        in
         let search_term = (struct_name ^ "." ^ struct_field) in
-        let field_index =try Hashtbl.find struct_field_indexes search_term
-        with Not_found ->raise(Failure(search_term^""))
+        let field_index = try Hashtbl.find struct_field_indexes search_term
+                          with Not_found ->raise(Failure(search_term^""))
         in
       let _val = L.build_struct_gep (lookup struct_id) field_index struct_field builder in
       let _val =
