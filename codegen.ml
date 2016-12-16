@@ -24,10 +24,9 @@ module SymbolsMap = Map.Make(String)
 
 let struct_types:(string, lltype) Hashtbl.t = Hashtbl.create 10
 let struct_datatypes:(string, string) Hashtbl.t = Hashtbl.create 10
+
 let struct_field_indexes:(string, int) Hashtbl.t = Hashtbl.create 50
 let struct_field_datatypes:(string, typ) Hashtbl.t = Hashtbl.create 50
-let struct_name_list:(string,string list) Hashtbl.t = Hashtbl.create 50
-let struct_type_list:(string,typ list) Hashtbl.t = Hashtbl.create 50
 
 let translate (statements, functions, structs) =
   let context = L.global_context () in
@@ -43,9 +42,7 @@ let translate (statements, functions, structs) =
   and flt_t  = L.double_type context
   and str_t  = L.pointer_type (L.i8_type context)
   and void_t = L.void_type context 
-  (* and idlist_t = L.pointer_type (match L.type_by_name llm "struct.IdList" with
-    None -> raise (Invalid_argument "Option.get idlist")
-  | Some x -> x) *)  in
+ in
 
   let find_struct name =
     try Hashtbl.find struct_types name
@@ -58,12 +55,10 @@ let translate (statements, functions, structs) =
     | A.Bool  -> i1_t
     | A.Void  -> void_t 
     | A.Str   -> str_t
-    | A.Objecttype(struct_name) -> L.pointer_type (find_struct struct_name)
+    | A.Objecttype(struct_name) -> find_struct struct_name
     | _ -> raise(Failure("No matching pattern in ltype_of_typ"))
-    (* | A.List _ -> idlist_t  *)
   in
 
-    (* A.StringLit s -> L.build_global_stringptr s "str" builder *)
 
 
   (*Define the structs and its fields' datatype, storing in struct_types and struct_field_datatypes*)
@@ -90,8 +85,6 @@ let translate (statements, functions, structs) =
           Hashtbl.add struct_field_datatypes n t; (*add name, datatype*)  
         ) name_list type_list;
         );
-        Hashtbl.add struct_name_list sdecl.A.sname name_list;
-        Hashtbl.add struct_type_list sdecl.A.sname type_list;
 
     in
 
@@ -216,6 +209,7 @@ let translate (statements, functions, structs) =
     let (the_function, _) = try StringMap.find fdecl.A.fname function_decls 
                             with Not_found -> raise(Failure("No matching pattern in build_function_body"))in
     let builder = L.builder_at_end context (L.entry_block the_function) in
+    let local_struct_datatypes:(string, string) Hashtbl.t = Hashtbl.create 10 in
 
     let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder
     and float_format_str = L.build_global_stringptr "%f\n" "fmt" builder
@@ -229,22 +223,24 @@ let translate (statements, functions, structs) =
     (* Construct the function's "locals": formal arguments and locally
        declared variables.  Allocate each on the stack, initialize their
        value, if appropriate, and remember their values in the "locals" map *)
-    let local_vars =
+    (*let local_vars =
       let add_formal m (t, n) p = L.set_value_name n p;
 	       let local = L.build_alloca (ltype_of_typ t) n builder in
 	       ignore (L.build_store p local builder);
-	       StringMap.add n local m in
+	       StringMap.add n local m in*)
 
-    (* let local_vars =
+    let local_vars =
       let add_formal m (t, n) p = L.set_value_name n p;
         let formal = match t with
                 |Objecttype(struct_n) ->
-                    ignore(Hashtbl.add struct_datatypes n struct_n);  (* add to map name vs type *)
-                    (* find_struct struct_n *) L.build_alloca (ltype_of_typ t) n builder
+                        ignore(Hashtbl.add struct_datatypes n struct_n);
+                        let local = L.build_alloca (ltype_of_typ t) n builder in
+                        ignore (L.build_store p local builder); local
+
                 | _ -> let local = L.build_alloca (ltype_of_typ t) n builder in
                       ignore (L.build_store p local builder); local
           in
-         StringMap.add n formal m in *)
+         StringMap.add n formal m in 
 
       let add_local m (t, n) =
 	       let local_t = match t with
@@ -280,7 +276,7 @@ let translate (statements, functions, structs) =
       List.fold_left add_local formals locals in
     (* print_endline(string_of_int(StringMap.cardinal local_vars)); *)
 
-    (* Return the value for a variable or formal argument *)
+    (* Return the value for a variable or formal argument, for a struct return the pointer *)
     let lookup n = try StringMap.find n local_vars
                   with Not_found -> try StringMap.find n global_vars with Not_found -> raise(Failure("No matching pattern in Global_vars access in lookup"))
     in
@@ -411,13 +407,15 @@ let translate (statements, functions, structs) =
 
     (*Struct access function*)
     let struct_access struct_id struct_field isAssign builder = (*id field*)
-      let struct_name = Hashtbl.find struct_datatypes struct_id 
-        in
+
         let search_term = (struct_name ^ "." ^ struct_field) in
         let field_index = try Hashtbl.find struct_field_indexes search_term
                           with Not_found ->raise(Failure(search_term^""))
         in
-      let _val = L.build_struct_gep (lookup struct_id) field_index struct_field builder in
+        let value = lookup struct_id in
+        (*and t = find_struct struct_name in
+        let struct_pt = L.build_pointercast value t "tmp" builder in *)
+      let _val = L.build_struct_gep value field_index struct_field builder in
       let _val =
         if isAssign then
                 build_load _val struct_field builder
