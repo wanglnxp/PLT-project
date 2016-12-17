@@ -426,6 +426,8 @@ let translate (statements, functions, structs) =
       _val
     in
 
+    (* let str_float str = try float_of_string(String.concat "." [(String.sub str 4 (String.length str-4));"0"]) with Not_found -> raise(Failure("fucked up"))
+    in *)
     let rec expr builder = function
         A.Literal i -> L.const_int i32_t i
       | A.FloatLit f  -> L.const_float flt_t f
@@ -443,12 +445,12 @@ let translate (statements, functions, structs) =
          let combine = (L.string_of_lltype(L.type_of e1'), L.string_of_lltype(L.type_of e2'))
           in
             let binop_match combine e1' e2'= match combine with
-                ("i32", "i32") -> (int_binops op) e1' e2' "tmp" builder
-              | ("double", "i32") -> (float_binops op) e1' e2' "tmp" builder
-              | ("i32","double") -> (float_binops op) e1' e2' "tmp" builder
-              | ("double","double") -> (float_binops op) e1' e2' "tmp" builder
+                ("i32", "i32") -> ignore(print_endline("; binop"^string_of_llvalue(e2')));(int_binops op) e1' e2' "tmp" builder
+              | ("double", "i32") -> let e3' = build_sitofp e2' flt_t "x" builder in (float_binops op) e1' e3' "tmp" builder
+              | ("i32", "double") -> let e3' = build_sitofp e1' flt_t "x" builder in (float_binops op) e3' e2' "tmp" builder
+              | ("double", "double") -> (float_binops op) e1' e2' "tmp" builder
               | ("i1", "i1") -> (bool_binops op) e1' e2' "tmp" builder
-              | _ -> raise (Failure "Invalid printf type")
+              | _ -> raise (Failure "Invalid binop type")
             in
           binop_match combine e1' e2'
       | A.Unop(op, e) ->
