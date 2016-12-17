@@ -32,8 +32,8 @@ type expr =
   | Unop of uop * expr
   | Assign of string * expr
   | Call of string * expr list (*function call*)
-(*   | Objcall of string * string * expr list
-  | Dotassign of string * string * expr
+  | Objcall of string * string * expr list
+  (*| Dotassign of string * string * expr
   | Lineassign of string * string * expr * expr *)
   | List of expr list
   | Mem of string * expr

@@ -162,16 +162,17 @@ expr:
 
   | ID ASSIGN expr   { Assign($1, $3) }
 
+  | LBRACKET list_opt RBRACKET { List($2) }
   | ID DOT ID ASSIGN expr {StructAssign($1, $3, $5)}
   | ID DOT ID        { StructAccess($1, $3) }
   | ID LBRACKET expr RBRACKET ASSIGN expr    { ListAssign($1, $3, $6) }
   | ID LBRACKET expr RBRACKET { Mem($1, $3) }
-  | LBRACKET list_opt RBRACKET { List($2) }
+  | ID DOT ID LPAREN list_opt RPAREN { Objcall($1, $3, $5) }
+
 
   | ID LPAREN list_opt RPAREN { Call($1, $3) }
   | LPAREN expr RPAREN { $2 }
 
-  /*| ID DOT ID LPAREN list_opt RPAREN { Objcall($1, $3, $5) }*/
 
 list_opt:
     /*nothing*/  { [] }

@@ -31,9 +31,9 @@ let struct_field_datatypes:(string, typ) Hashtbl.t = Hashtbl.create 50
 let translate (statements, functions, structs) =
   let context = L.global_context () in
   let the_module = L.create_module context "MicroC" in
-  (* let llctx = L.global_context () in
-  let llmem = L.MemoryBuffer.of_file "bindings.bc" in
-  let llm = Llvm_bitreader.parse_bitcode llctx llmem in *)
+  let llctx = L.global_context () in
+  let llmem = L.MemoryBuffer.of_file "list.bc" in
+  let llm = Llvm_bitreader.parse_bitcode llctx llmem in
   
   
   let i32_t  = L.i32_type  context
@@ -41,7 +41,13 @@ let translate (statements, functions, structs) =
   and i1_t   = L.i1_type   context
   and flt_t  = L.double_type context
   and str_t  = L.pointer_type (L.i8_type context)
-  and void_t = L.void_type context 
+  and void_t = L.void_type context
+  and node_t = L.pointer_type (match L.type_by_name llm "struct.ListNode" with
+    None -> raise (Invalid_argument "Option.get ListNode")
+  | Some x -> x)
+  and list_t = L.pointer_type (match L.type_by_name llm "struct.NodeList" with
+    None -> raise (Invalid_argument "Option.get")
+  | Some x -> x)
  in
 
   let find_struct name =
@@ -55,6 +61,7 @@ let translate (statements, functions, structs) =
     | A.Bool  -> i1_t
     | A.Void  -> void_t 
     | A.Str   -> str_t
+    | A.ListTyp _  -> list_t
     | A.Objecttype(struct_name) -> find_struct struct_name
     | _ -> raise(Failure("No matching pattern in ltype_of_typ"))
   in
@@ -193,6 +200,23 @@ let translate (statements, functions, structs) =
   let printf_func = L.declare_function "printf" printf_t the_module in
   let print_number_ty = L.function_type i32_t [| i32_t |] in
   let print_number_func = L.declare_function "print_number" print_number_ty the_module in 
+
+  (* Declare list functions *)
+  let initIdList_t  = L.function_type list_t [| |] in
+  let initIdList_f  = L.declare_function "init_List" initIdList_t the_module in
+
+  let appendId_t    = L.function_type list_t [| list_t; L.pointer_type i8_t |] in
+  let appendId_f    = L.declare_function "add_back" appendId_t the_module in
+
+  let indexIdList_t = L.function_type (L.pointer_type i8_t) [| list_t; i32_t |] in
+  let indexIdList_f = L.declare_function "index_acess" indexIdList_t the_module in
+
+(*   let removeIdList_t = L.function_type idlist_t [| idlist_t; L.pointer_type i8_t |] in
+  let removeIdList_f = L.declare_function "removeIdList" removeIdList_t the_module in
+  let findNodeId_t = L.function_type node_t [| idlist_t; L.pointer_type i8_t |] in
+  let findNodeId_f = L.declare_function "findNodeId" findNodeId_t the_module in
+  let isEmptyIdList_t = L.function_type i8_t [| idlist_t |] in 
+  let isEmptyIdList_f = L.declare_function "isEmptyList" isEmptyIdList_t the_module in *)
 
   (* Define each function (arguments and return type) so we can call it *)
   let function_decls =
@@ -484,7 +508,7 @@ let translate (statements, functions, structs) =
                             let des =(struct_access id field false builder) in
                             ignore (L.build_store e' des builder);e'
       | A.Call ("print", [e]) ->
-      ignore(print_endline("; print"));
+        ignore(print_endline("; print"));
         let e' = expr builder e in
         (* ignore(print_endline(L.string_of_llvalue(d')));
           let find_bool input = match L.string_of_llvalue(input) with
@@ -496,14 +520,13 @@ let translate (statements, functions, structs) =
         let e' = find_bool d' in *)
 
         let typ_e' = L.string_of_lltype(L.type_of e') in
-(*         print_endline(typ_e');
- *)        if typ_e' = "i1" then
-          if (L.string_of_llvalue(e')) = "i1 true" then
-        L.build_call printf_func [| format_str typ_e' ; L.build_global_stringptr ("true") "str" builder |] "printf" builder
+          if typ_e' = "i1" then
+            if (L.string_of_llvalue(e')) = "i1 true" then
+            L.build_call printf_func [| format_str typ_e' ; L.build_global_stringptr ("true") "str" builder |] "printf" builder
+            else
+            L.build_call printf_func [| format_str typ_e' ; L.build_global_stringptr ("flase") "str" builder |] "printf" builder
           else
-          L.build_call printf_func [| format_str typ_e' ; L.build_global_stringptr ("flase") "str" builder |] "printf" builder
-        else
-        L.build_call printf_func [| format_str typ_e' ; e' |] "printf" builder
+          L.build_call printf_func [| format_str typ_e' ; e' |] "printf" builder
           (* L.build_call printf_func [| int_format_str ; (expr builder e) |]
           "printf" builder *)
          

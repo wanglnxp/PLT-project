@@ -9,9 +9,10 @@ read -p "Let's see some Hello World action. Please any key to continue."
 echo "Result:"
 echo
 
-clang -S -emit-llvm ./list.c
+clang -emit-llvm -o list.bc -c src/list.c
+# clang -S -emit-llvm ./list.c
 ./microc.native < $1 > demo.ll
-/usr/local/opt/llvm/bin/llvm-link demo.ll list.ll -o a.out
+/usr/local/opt/llvm/bin/llvm-link demo.ll list.bc -o a.out
 /usr/local/opt/llvm/bin/lli a.out
 
 
