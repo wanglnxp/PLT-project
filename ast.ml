@@ -72,3 +72,54 @@ type s_decl = {
 
 type program = stmt list * func_decl list * s_decl list
 
+let string_of_op = function
+    Add -> "+"
+  | Sub -> "-"
+  | Mult -> "*"
+  | Div -> "/"
+  | Mod -> "%"
+  | Equal -> "=="
+  | Neq -> "!="
+  | Less -> "<"
+  | Leq -> "<="
+  | Greater -> ">"
+  | Geq -> ">="
+  | And -> "&&"
+  | Or -> "||"
+
+let string_of_uop = function
+    Neg -> "-"
+  | Not -> "!"
+
+let rec string_of_expr = function
+    Literal(l) -> string_of_int l
+  | FloatLit(f) -> string_of_float f
+  | StringLit(s) -> s
+  | BoolLit(x) -> (if x then "true" else "false")
+  | Id(s) -> s
+(*   | Point of pot
+  | Line of line *)
+  | Binop(e1, o, e2) ->
+      string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
+  | Unop(o, e) -> string_of_uop o ^ string_of_expr e
+  | Assign(v, e) -> v ^ " = " ^ string_of_expr e
+  | Call(f, el) ->
+      f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
+(*   | Objcall of string * string * expr list
+  | Dotassign of string * string * expr
+  | Lineassign of string * string * expr * expr *)
+  (* | List of expr list *)
+  (* | Mem of string * expr
+  | ListAssign of string * expr * expr
+  | StructAssign of string * string * expr
+  | StructAccess of string * string *)
+  | Noexpr -> ""
+
+let string_of_typ = function
+    Int -> "int"
+  | Bool -> "bool"
+  | Float -> "float"
+  | Str -> "string"
+  | Void -> "void"
+  | ListTyp _ -> "list"
+  | Objecttype _ -> "struct"

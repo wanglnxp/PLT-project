@@ -407,10 +407,11 @@ let translate (statements, functions, structs) =
 
     (*Struct access function*)
     let struct_access struct_id struct_field isAssign builder = (*id field*)
-
+      let struct_name = try Hashtbl.find struct_datatypes struct_id with Not_found -> try Hashtbl.find local_struct_datatypes struct_id with Not_found -> raise(Failure("111"))
+    in
         let search_term = (struct_name ^ "." ^ struct_field) in
-        let field_index = try Hashtbl.find struct_field_indexes search_term
-                          with Not_found ->raise(Failure(search_term^""))
+        let field_index =try Hashtbl.find struct_field_indexes search_term
+        with Not_found ->raise(Failure(search_term^""))
         in
         let value = lookup struct_id in
         (*and t = find_struct struct_name in
@@ -424,7 +425,6 @@ let translate (statements, functions, structs) =
       in
       _val
     in
-
 
     let rec expr builder = function
         A.Literal i -> L.const_int i32_t i
@@ -440,44 +440,17 @@ let translate (statements, functions, structs) =
       | A.Binop (e1, op, e2) ->
 	       let e1' = expr builder e1
 	       and e2' = expr builder e2 in
-            (match e1 with
-              A.BoolLit b -> (bool_binops op) e1' e2' "tmp" builder
-            | A.FloatLit f -> (float_binops op) e1' e2' "tmp" builder
-            | A.Literal i -> (int_binops op) e1' e2' "tmp" builder
-            | A.Id s ->(
-                let mytyp = lookup_datatype s in
-                      (
-                        match mytyp with
-                          A.Int ->(
-                            match op with
-                             A.Add
-                            |A.Sub
-                            |A.Mult
-                            |A.Div
-                            |A.Mod
-                            |A.Equal
-                            |A.Neq
-                            |A.Less
-                            |A.Leq
-                            |A.Greater
-                            |A.Geq -> (int_binops op) e1' e2' "tmp" builder
-                            | _ -> raise(Failure "Invalid Int Binop")
-                         )
-                        | A.Bool -> (bool_binops op) e1' e2' "tmp" builder
-                        | A.Float -> (float_binops op) e1' e2' "tmp" builder
-                        |_ -> raise (Failure "Invalid Type of ID binop")
-                    ))
-            | A.StructAccess(id, field) ->(
-              let my_datatype = lookup_struct_datatype(id,field) in (*get datatype*)
-                  (match my_datatype with
-                  | A.Bool -> (bool_binops op) e1' e2' "tmp" builder
-                  | A.Int -> (int_binops op) e1' e2' "tmp" builder
-                  | A.Float -> (float_binops op) e1' e2' "tmp" builder
-                  | _ ->  raise (Failure "Invalid Types of Struct binop")
-                )
-              )
-            |_ -> raise (Failure "Invalid Binop e1 Type")
-            )
+         let combine = (L.string_of_lltype(L.type_of e1'), L.string_of_lltype(L.type_of e2'))
+          in
+            let binop_match combine e1' e2'= match combine with
+                ("i32", "i32") -> (int_binops op) e1' e2' "tmp" builder
+              | ("double", "i32") -> (float_binops op) e1' e2' "tmp" builder
+              | ("i32","double") -> (float_binops op) e1' e2' "tmp" builder
+              | ("double","double") -> (float_binops op) e1' e2' "tmp" builder
+              | ("i1", "i1") -> (bool_binops op) e1' e2' "tmp" builder
+              | _ -> raise (Failure "Invalid printf type")
+            in
+          binop_match combine e1' e2'
       | A.Unop(op, e) ->
         let e' = expr builder e in
           (match op with

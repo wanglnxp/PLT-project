@@ -116,13 +116,57 @@ let check (statements, functions, structs) =
       StringMap.empty (globals)
     in
 
-    let type_of_identifier s map=
-      try StringMap.find s map
+    let type_of_identifier s=
+      try StringMap.find s local_syb
+      with Not_found -> try StringMap.find s glob_syb
       with Not_found -> raise (Failure ("undeclared identifier " ^ s))
     in
+
+    (* Return the type of an expression or throw an exception *)
+    let rec expr = function
+		Literal _ -> Int
+      | BoolLit _ -> Bool
+      | FloatLit _ -> Float
+      | Id s -> type_of_identifier s
+      | Binop(e1, op, e2) as e -> let t1 = expr e1 and t2 = expr e2 in
+				(match op with
+          		  Add | Sub | Mult | Div when (t1 = Int || t1 = Float) && (t2 = Int || t2 = Float) -> (if t1 = Float || t2 = Float then Float
+          		  						 else Int)
+				| Equal | Neq when t1 = t2 -> Bool
+				| Less | Leq | Greater | Geq when t1 = Int && t2 = Int -> Bool
+				| And | Or when t1 = Bool && t2 = Bool -> Bool
+        		| _ -> raise (Failure ("illegal binary operator " ^
+              		string_of_typ t1 ^ " " ^ string_of_op op ^ " " ^
+              		string_of_typ t2 ^ " in " ^ string_of_expr e))
+        		)
+      | Unop(op, e) as ex -> let t = expr e in
+	 	(match op with
+	   	   Neg when t = Int -> Int
+	 	 | Not when t = Bool -> Bool
+         | _ -> raise (Failure ("illegal unary operator " ^ string_of_uop op ^
+	  		   string_of_typ t ^ " in " ^ string_of_expr ex)))
+      | Noexpr -> Void
+      | Assign(var, e) as ex -> let lt = type_of_identifier var
+                                and rt = expr e in
+        check_assign lt rt (Failure ("illegal assignment " ^ string_of_typ lt ^
+				     " = " ^ string_of_typ rt ^ " in " ^ 
+				     string_of_expr ex))
+      | Call(fname, actuals) as call -> let fd = function_decl fname in
+         if List.length actuals != List.length fd.formals then
+           raise (Failure ("expecting " ^ string_of_int
+             (List.length fd.formals) ^ " arguments in " ^ string_of_expr call))
+         else
+           List.iter2 (fun (ft, _) e -> let et = expr e in
+              ignore (check_assign ft et
+                (Failure ("illegal actual argument found " ^ string_of_typ et ^
+                " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e))))
+             fd.formals actuals;
+           fd.typ
+    in
+
     report_duplicate (fun n -> "duplicate formal or local " ^ n ^ " in function " ^ func.fname ^ "()")
       (List.map snd (func.formals@func_locals));
-    (* check function local *)
+
     (* let fun_local = 
       let rec test_function pass_list head = match head with
         Vdecl (a, b) -> (a, b)::pass_list

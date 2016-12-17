@@ -9,15 +9,18 @@ struct person[
 }*/
 
 int change(int a){
-	a = a+1;
+	a = 10;
 	int b;
 	b = 100;
+	float c = 12.03;
 	return a;
 }
 
 int main(){
 	struct person a;
 	struct person b;
+	b.age = 9;
+	print(b.age + 10);
 	a.name = "100";
 	b.name = "200";
 	int bbb = 0;

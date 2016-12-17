@@ -1,7 +1,10 @@
 ; Vdecl b
+; Vdecl c
 ; Return
 ; Vdecl a
 ; Vdecl b
+; print
+; SAccessb
 ; Vdecl bbb
 ; ModuleID = 'MicroC'
 
@@ -26,13 +29,13 @@ define i32 @change(i32 %a) {
 entry:
   %a1 = alloca i32
   store i32 %a, i32* %a1
+  %c = alloca double
   %b = alloca i32
-  %a2 = load i32, i32* %a1
-  %tmp = add i32 %a2, 1
-  store i32 %tmp, i32* %a1
+  store i32 10, i32* %a1
   store i32 100, i32* %b
-  %a3 = load i32, i32* %a1
-  ret i32 %a3
+  store double 1.203000e+01, double* %c
+  %a2 = load i32, i32* %a1
+  ret i32 %a2
 }
 
 define i32 @main() {
@@ -40,12 +43,18 @@ entry:
   %bbb = alloca i32
   %b = alloca %person
   %a = alloca %person
+  %age = getelementptr inbounds %person, %person* %b, i32 0, i32 1
+  store i32 9, i32* %age
+  %age1 = getelementptr inbounds %person, %person* %b, i32 0, i32 1
+  %age2 = load i32, i32* %age1
+  %tmp = add i32 %age2, 10
+  %printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @fmt.4, i32 0, i32 0), i32 %tmp)
   %name = getelementptr inbounds %person, %person* %a, i32 0, i32 2
   store i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str, i32 0, i32 0), i8** %name
-  %name1 = getelementptr inbounds %person, %person* %b, i32 0, i32 2
-  store i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.8, i32 0, i32 0), i8** %name1
+  %name3 = getelementptr inbounds %person, %person* %b, i32 0, i32 2
+  store i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.8, i32 0, i32 0), i8** %name3
   store i32 0, i32* %bbb
-  %bbb2 = load i32, i32* %bbb
-  %change_result = call i32 @change(i32 %bbb2)
+  %bbb4 = load i32, i32* %bbb
+  %change_result = call i32 @change(i32 %bbb4)
   ret i32 0
 }
