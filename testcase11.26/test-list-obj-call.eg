@@ -1,0 +1,7 @@
+list int l;
+
+int main(){
+	l.add("hell");
+}
+
+/*test to fail*/

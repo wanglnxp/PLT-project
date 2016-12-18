@@ -137,6 +137,7 @@ let check (statements, functions, structs) =
 		    Literal _ -> Int
       | BoolLit _ -> Bool
       | FloatLit _ -> Float
+      | StringLit _ -> Str
       | Id s -> type_of_identifier s
       | Binop(e1, op, e2) as e -> let t1 = expr e1 and t2 = expr e2 in
 				(match op with
@@ -203,6 +204,7 @@ let check (statements, functions, structs) =
            | [] -> ()
         in check_block sl
       | Expr e -> ignore (expr e)
+      | Vdecl (e1, e2) -> ()
       | Return e -> let t = expr e in if t = func.typ then () else
          raise (Failure ("return gives " ^ string_of_typ t ^ " expected " ^
                          string_of_typ func.typ ^ " in " ^ string_of_expr e))
@@ -212,6 +214,7 @@ let check (statements, functions, structs) =
       | For(e1, e2, e3, st) -> ignore (expr e1); check_bool_expr e2;
                                ignore (expr e3); stmt st
       | While(p, s) -> check_bool_expr p; stmt s
+      | _ -> raise (Failure ("Not a vaid stmt"))
     in
 
     stmt (Block func.body)
