@@ -127,12 +127,11 @@ let translate (statements, functions, structs) =
     let rec test_function pass_list head = match head with
         A.Vdecl (a, b) -> (a, b)::pass_list
       | A.Block (a) -> List.fold_left test_function pass_list a
-      |_ -> pass_list
+      | _ -> pass_list
     in List.fold_left test_function [] statements
   in
 
-(*   let add_map map (n, t) = StringMap.add n t map in
- *)  let global_map = List.fold_left (fun map (t, n) -> StringMap.add n t map) StringMap.empty globals
+  let global_map = List.fold_left (fun map (t, n) -> StringMap.add n t map) StringMap.empty globals
   in
   (* Declare each global variable; remember its value in a map *)
     let global_vars =
@@ -222,6 +221,12 @@ let translate (statements, functions, structs) =
 
   let pointer_to_float_t = L.function_type flt_t [| L.pointer_type i8_t |] in
   let pointer_to_float_f = L.declare_function "pointer_to_float" pointer_to_float_t the_module in
+  
+  let index_acess_t = L.function_type (L.pointer_type i8_t) [| list_t; i32_t |] in
+  let index_acess_f = L.declare_function "index_acess" index_acess_t the_module in
+
+  let list_length_t = L.function_type i32_t [| list_t |] in
+  let list_length_f = L.declare_function "length" list_length_t the_module in
 
 (*   let removeIdList_t = L.function_type idlist_t [| idlist_t; L.pointer_type i8_t |] in
   let removeIdList_f = L.declare_function "removeIdList" removeIdList_t the_module in
@@ -468,13 +473,13 @@ let translate (statements, functions, structs) =
           (match op with
             A.Neg     -> 
                 (match e with
-                     A.FloatLit f -> L.build_fneg
-                    |A.Literal i -> L.build_neg
-                    |A.Id s ->
+                      A.FloatLit f -> L.build_fneg
+                    | A.Literal i -> L.build_neg
+                    | A.Id s ->
                       let mytyp = lookup_datatype s in
                         (match mytyp with
-                           A.Int -> L.build_neg
-                          |A.Float -> L.build_fneg
+                            A.Int -> L.build_neg
+                          | A.Float -> L.build_fneg
                           | _ -> raise (Failure "Invalid Unop id type")
                         )
                     | A.StructAccess(id,field) ->(
@@ -497,30 +502,30 @@ let translate (statements, functions, structs) =
       | A.Objcall (objs, funs, args) ->
           let check_fun objs funs args = match funs with
             | "add" -> let l_val = L.build_load (lookup objs) objs builder in
+            let check = L.build_call list_length_f [| l_val |] "tmp" builder in
+            
+                        print_endline(";"^ string_of_bool(L.is_null(check)));
+                        print_endline(";"^ (L.string_of_llvalue(check)));
+                        print_endline(";"^ (L.value_name(check)));
+                       let l_val = L.build_call initIdList_f [||] "init" builder in
                        let d_val = expr builder (List.hd args) in
                        let void_d_ptr = L.build_call int_to_pointer_f [| d_val |] "tmp" builder in
-                       L.build_call appendId_f [| l_val; void_d_ptr |] "tmp" builder
+                       let app = L.build_call appendId_f [| l_val; void_d_ptr |] "tmp" builder
+                     in
+                       ignore (L.build_store app (lookup objs) builder);
+                       app
+
+            | "get" -> let l_val = L.build_load (lookup objs) objs builder in
+                       let d_val = expr builder (List.hd args) in
+                       let void_ptr = L.build_call index_acess_f [| l_val;d_val |] "tmp" builder in
+                       L.build_call  pointer_to_int_f [| void_ptr |] "tmp" builder
+                       (* let void_res = L.build_call index_acess_f [| void_d_ptr;d_val |] "tmp" builder in
+                       L.build_call pointer_to_int_f [| void_res |] "tmp" builder *)
+                       
+
             | _ -> L.const_int i32_t 42
           in 
           check_fun objs funs args
-                    
-                    (* let d_ltyp = L.type_of d_val in
-                    let d_ptr = L.build_malloc d_ltyp "tmp" builder in
-                    let _ = L.build_store d_val d_ptr builder in *)
-                    
-                     (* ignore(print_endline(let l_val = expr builder objs in
-                     let d_val = expr builder args in
-                     let d_ltyp = L.type_of d_val in
-                     let d_ptr = L.build_malloc d_ltyp "tmp" builder in
-                     ignore (L.build_store d_val d_ptr builder);
-                     d_ptr in
-
-                     let void_d_ptr = L.build_bitcast d_ptr (L.pointer_type i8_t) "ptr" builder in
-                     ignore(L.build_call appendId_f [| l_val; void_d_ptr |] "tmp" builder);)); *)
-
-                     (* let void_d_ptr = L.build_call int_to_pointer_f [| d_val |] "tmp" builder in
-                     L.build_call appendId_f [| l_val; void_d_ptr |] "tmp" builder *)
-                     (* L.build_load (lookup s) s builder *)
 
       | A.Call ("print", [e]) ->
         ignore(print_endline("; print"));

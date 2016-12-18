@@ -105,14 +105,14 @@ let rec string_of_expr = function
   | Assign(v, e) -> v ^ " = " ^ string_of_expr e
   | Call(f, el) ->
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
-(*   | Objcall of string * string * expr list
-  | Dotassign of string * string * expr
+  | Objcall(id1, id2, e) -> id1 ^ "." ^ id2 ^ "(" ^ String.concat ", " (List.map string_of_expr e) ^ ")"
+(*   | Dotassign of string * string * expr
   | Lineassign of string * string * expr * expr *)
   (* | List of expr list *)
   (* | Mem of string * expr
-  | ListAssign of string * expr * expr
-  | StructAssign of string * string * expr
-  | StructAccess of string * string *)
+  | ListAssign of string * expr * expr *)
+  | StructAssign(v, seg, e) -> v ^ "." ^ seg ^ "=" ^ string_of_expr e
+  | StructAccess(v, seg) -> v ^ "." ^ seg
   | Noexpr -> ""
 
 let string_of_typ = function

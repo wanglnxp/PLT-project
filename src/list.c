@@ -47,11 +47,20 @@ struct NodeList *add_back(struct NodeList *list, void *data)
 
 void *index_acess(struct NodeList *list, int id)
 {
+  /*printf("%d\n", id);
+  if(list->head)
+     printf("%d\n", length(list));*/
+  if (id >= length(list)){
+    perror("id is longer than list length");
+    exit(1);
+  }
   struct ListNode* node = list->head;
   while (id > 0){
     node = node->next;
     id--;
   }
+
+  // printf("%d\n", pointer_to_int(node->data));
   return node->data;
 }
 
@@ -84,10 +93,17 @@ int remove_node(struct NodeList *list, int id)
 
 int length(struct NodeList *list)
 {
+  if (!list) {
+    return -1;
+  }
   int l = 0;
   struct ListNode* tmp = list->head;
   
-  while(tmp) l++;
+  while(tmp)
+  {
+    l++;
+    tmp = tmp -> next;
+  } 
   
   return l;
 }

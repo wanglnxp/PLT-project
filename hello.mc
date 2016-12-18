@@ -1,7 +1,16 @@
 list int l;
+list int n;
 
+struct person[
+	int age;
+]
 int main(){
-	l.add(3);
+	struct person a;
+	a.age = 10;
+    l.add(2733);
+    l.add(444);
+    l.add(1234);
+	print(l.get(0));
 	return 0;
 }
 

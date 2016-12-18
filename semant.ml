@@ -164,7 +164,7 @@ let check (statements, functions, structs) =
 				     string_of_expr ex))
       | Objcall(obj, meth, args) ->
         (match meth with
-        "add" ->
+          "add" ->
           (let lst = type_of_identifier obj in
             match lst with
               ListTyp(t) -> let ele = expr (List.hd args) in
@@ -174,9 +174,14 @@ let check (statements, functions, structs) =
                   ListTyp(t)
             | _ -> raise (Failure("variable "^obj^" is not matching type of "^meth^" method "))
           )
+          | "get" -> 
+            (let lst = type_of_identifier obj in
+            match lst with
+              ListTyp(t) -> t
+            | _ -> raise (Failure("variable "^obj^" is not matching type of "^meth^" method "))
+          )
         | _ -> raise (Failure("have not define obj call"))
-      )
-
+        )
       | Call(fname, actuals) as call -> let fd = function_decl fname in
          if List.length actuals != List.length fd.formals then
            raise (Failure ("expecting " ^ string_of_int
@@ -188,6 +193,8 @@ let check (statements, functions, structs) =
                 " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e))))
              fd.formals actuals;
            fd.typ
+      | StructAccess (id,field) -> type_of_identifier id
+      | StructAssign (id, field, e) -> type_of_identifier id (*need add more*)
     in
 
     let check_bool_expr e = if expr e != Bool
