@@ -20,7 +20,18 @@ declare %struct.NodeList* @add_back(%struct.NodeList*, i8*)
 
 declare i8* @index_acess(%struct.NodeList*, i32)
 
+declare i8* @int_to_pointer(i32)
+
+declare i8* @float_to_pointer(double)
+
+declare i32 @pointer_to_int(i8*)
+
+declare double @pointer_to_float(i8*)
+
 define i32 @main() {
 entry:
+  %l = load %struct.NodeList*, %struct.NodeList** @l
+  %tmp = call i8* @int_to_pointer(i32 3)
+  %tmp1 = call %struct.NodeList* @add_back(%struct.NodeList* %l, i8* %tmp)
   ret i32 0
 }

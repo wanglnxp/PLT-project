@@ -211,6 +211,18 @@ let translate (statements, functions, structs) =
   let indexIdList_t = L.function_type (L.pointer_type i8_t) [| list_t; i32_t |] in
   let indexIdList_f = L.declare_function "index_acess" indexIdList_t the_module in
 
+  let int_to_pointer_t = L.function_type (L.pointer_type i8_t) [| i32_t |] in
+  let int_to_pointer_f = L.declare_function "int_to_pointer" int_to_pointer_t the_module in
+
+  let float_to_pointer_t = L.function_type (L.pointer_type i8_t) [| flt_t |] in
+  let float_to_pointer_f = L.declare_function "float_to_pointer" float_to_pointer_t the_module in
+
+  let pointer_to_int_t = L.function_type i32_t [| L.pointer_type i8_t |] in
+  let pointer_to_int_f = L.declare_function "pointer_to_int" pointer_to_int_t the_module in
+
+  let pointer_to_float_t = L.function_type flt_t [| L.pointer_type i8_t |] in
+  let pointer_to_float_f = L.declare_function "pointer_to_float" pointer_to_float_t the_module in
+
 (*   let removeIdList_t = L.function_type idlist_t [| idlist_t; L.pointer_type i8_t |] in
   let removeIdList_f = L.declare_function "removeIdList" removeIdList_t the_module in
   let findNodeId_t = L.function_type node_t [| idlist_t; L.pointer_type i8_t |] in
@@ -341,31 +353,6 @@ let translate (statements, functions, structs) =
       with Not_found -> try SymbolsMap.find n global_vars_2 with Not_found -> raise(Failure("No matching pattern in globals access in lookup_datatype"))
     in
 
-
-    (*print function helper*)
-    (* let rec gen_type = function
-      A.Literal _    -> A.Int
-    | A.FloatLit _   -> A.Float
-    | A.BoolLit _    -> A.Bool
-    | A.StringLit _  -> A.Str
-    | A.Id s         -> (match (lookup_datatype s) with
-                        |  _ as ty -> ty)
-    | A.Call(s,_)    -> let fdecl = 
-                        List.find (fun x -> x.A.fname = s) functions in
-                        (match fdecl.A.typ with
-                        |  _ as ty -> ty)
-    | A.Binop(e1, _, _) -> gen_type e1
-    | A.Unop(_, e1)     -> gen_type e1
-    | A.Assign(s, _)    -> gen_type (A.Id(s))
-    | A.StructAccess(var, field) -> (match (lookup_struct_datatype(var,field)) with
-                                    |A.Bool -> A.Bool
-                                    |A.Float -> A.Float
-                                    |A.Str -> A.Str
-                                    |_ -> raise(Failure "No match struct type")
-                                    )
-    | A.Noexpr          -> raise (Failure "corrupted tree - Noexpr as a statement")
-    in *)
-
     let format_str x_type = match x_type with
           "i32"    -> int_format_str
         | "double"  -> float_format_str
@@ -373,7 +360,6 @@ let translate (statements, functions, structs) =
         | "i1" -> string_format_str
         | _ -> (* string_format_str *) raise (Failure "Invalid printf type")
     in
-
 
     (* Construct code for an expression; return its value *)
     (*builder type*)
@@ -507,18 +493,38 @@ let translate (statements, functions, structs) =
                             let e' = expr builder e in
                             let des =(struct_access id field false builder) in
                             ignore (L.build_store e' des builder);e'
+
+      | A.Objcall (objs, funs, args) ->
+          let check_fun objs funs args = match funs with
+            | "add" -> let l_val = L.build_load (lookup objs) objs builder in
+                       let d_val = expr builder (List.hd args) in
+                       let void_d_ptr = L.build_call int_to_pointer_f [| d_val |] "tmp" builder in
+                       L.build_call appendId_f [| l_val; void_d_ptr |] "tmp" builder
+            | _ -> L.const_int i32_t 42
+          in 
+          check_fun objs funs args
+                    
+                    (* let d_ltyp = L.type_of d_val in
+                    let d_ptr = L.build_malloc d_ltyp "tmp" builder in
+                    let _ = L.build_store d_val d_ptr builder in *)
+                    
+                     (* ignore(print_endline(let l_val = expr builder objs in
+                     let d_val = expr builder args in
+                     let d_ltyp = L.type_of d_val in
+                     let d_ptr = L.build_malloc d_ltyp "tmp" builder in
+                     ignore (L.build_store d_val d_ptr builder);
+                     d_ptr in
+
+                     let void_d_ptr = L.build_bitcast d_ptr (L.pointer_type i8_t) "ptr" builder in
+                     ignore(L.build_call appendId_f [| l_val; void_d_ptr |] "tmp" builder);)); *)
+
+                     (* let void_d_ptr = L.build_call int_to_pointer_f [| d_val |] "tmp" builder in
+                     L.build_call appendId_f [| l_val; void_d_ptr |] "tmp" builder *)
+                     (* L.build_load (lookup s) s builder *)
+
       | A.Call ("print", [e]) ->
         ignore(print_endline("; print"));
         let e' = expr builder e in
-        (* ignore(print_endline(L.string_of_llvalue(d')));
-          let find_bool input = match L.string_of_llvalue(input) with
-
-            "i1 false" -> print_endline("as");L.build_global_stringptr "false" "bool" builder
-          | "i1 true"  -> print_endline("as");L.build_global_stringptr "true" "bool" builder
-          | a -> print_endline("as");L.build_global_stringptr "true" "bool"
-        in
-        let e' = find_bool d' in *)
-
         let typ_e' = L.string_of_lltype(L.type_of e') in
           if typ_e' = "i1" then
             if (L.string_of_llvalue(e')) = "i1 true" then

@@ -24,4 +24,12 @@ int length(struct NodeList *list);
 
 int isEmptyList(struct NodeList *list);
 
+void *int_to_pointer(int i);
+
+void *float_to_pointer(float f);
+
+int pointer_to_int(void *pi);
+
+float pointer_to_float(void *pf);
+
 #endif /* #ifndef _SOURCE_H_ */

@@ -122,9 +122,19 @@ let check (statements, functions, structs) =
       with Not_found -> raise (Failure ("undeclared identifier " ^ s))
     in
 
+    (* Add all object methods *)
+    (* let obj_methods =  StringMap.add "add"
+       (ListTyp Void,Int,1) (StringMap.singleton "plot"
+       (Int,Int,1))
+    in
+
+    let obj_method s = try StringMap.find s obj_methods
+         with Not_found -> raise (Failure ("unrecognized object function " ^ s))
+    in *)
+
     (* Return the type of an expression or throw an exception *)
     let rec expr = function
-		Literal _ -> Int
+		    Literal _ -> Int
       | BoolLit _ -> Bool
       | FloatLit _ -> Float
       | Id s -> type_of_identifier s
@@ -140,9 +150,9 @@ let check (statements, functions, structs) =
               		string_of_typ t2 ^ " in " ^ string_of_expr e))
         		)
       | Unop(op, e) as ex -> let t = expr e in
-	 	(match op with
-	   	   Neg when t = Int -> Int
-	 	 | Not when t = Bool -> Bool
+	 	     (match op with
+	   	     Neg when t = Int -> Int
+	 	     | Not when t = Bool -> Bool
          | _ -> raise (Failure ("illegal unary operator " ^ string_of_uop op ^
 	  		   string_of_typ t ^ " in " ^ string_of_expr ex)))
       | Noexpr -> Void
@@ -151,6 +161,21 @@ let check (statements, functions, structs) =
         check_assign lt rt (Failure ("illegal assignment " ^ string_of_typ lt ^
 				     " = " ^ string_of_typ rt ^ " in " ^ 
 				     string_of_expr ex))
+      | Objcall(obj, meth, args) ->
+        (match meth with
+        "add" ->
+          (let lst = type_of_identifier obj in
+            match lst with
+              ListTyp(t) -> let ele = expr (List.hd args) in
+                if t <> ele then
+                  raise (Failure("variable "^obj^" is not matching type of input"))
+                else
+                  ListTyp(t)
+            | _ -> raise (Failure("variable "^obj^" is not matching type of "^meth^" method "))
+          )
+        | _ -> raise (Failure("have not define obj call"))
+      )
+
       | Call(fname, actuals) as call -> let fd = function_decl fname in
          if List.length actuals != List.length fd.formals then
            raise (Failure ("expecting " ^ string_of_int
@@ -164,8 +189,35 @@ let check (statements, functions, structs) =
            fd.typ
     in
 
-    report_duplicate (fun n -> "duplicate formal or local " ^ n ^ " in function " ^ func.fname ^ "()")
-      (List.map snd (func.formals@func_locals));
+    let check_bool_expr e = if expr e != Bool
+     then raise (Failure ("expected Boolean expression in " ^ string_of_expr e))
+     else () in
+
+    (* Verify a statement or throw an exception *)
+    let rec stmt = function
+        Block sl -> let rec check_block = function
+             [Return _ as s] -> stmt s
+           | Return _ :: _ -> raise (Failure "nothing may follow a return")
+           | Block sl :: ss -> check_block (sl @ ss)
+           | s :: ss -> stmt s ; check_block ss
+           | [] -> ()
+        in check_block sl
+      | Expr e -> ignore (expr e)
+      | Return e -> let t = expr e in if t = func.typ then () else
+         raise (Failure ("return gives " ^ string_of_typ t ^ " expected " ^
+                         string_of_typ func.typ ^ " in " ^ string_of_expr e))
+           
+      | If(p, b, b1, b2) -> check_bool_expr p; stmt b; stmt b1; stmt b2
+      | Elseif(e, s) -> check_bool_expr e; stmt s
+      | For(e1, e2, e3, st) -> ignore (expr e1); check_bool_expr e2;
+                               ignore (expr e3); stmt st
+      | While(p, s) -> check_bool_expr p; stmt s
+    in
+
+    stmt (Block func.body)
+   
+  in
+  List.iter check_function functions
 
     (* let fun_local = 
       let rec test_function pass_list head = match head with
@@ -199,8 +251,6 @@ let check (statements, functions, structs) =
       | While(p, s) -> check_bool_expr p; stmt s *)
     (* in
     stmt (Block func.body) *)
-  in
-  List.iter check_function functions
 
 
 
