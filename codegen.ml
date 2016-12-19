@@ -20,6 +20,7 @@ module A = Ast
 
 module StringMap = Map.Make(String)
 module SymbolsMap = Map.Make(String)
+module TypMap = Map.Make(String)
 
 
 let struct_types:(string, lltype) Hashtbl.t = Hashtbl.create 10
@@ -131,6 +132,14 @@ let translate (statements, functions, structs) =
     in List.fold_left test_function [] statements
   in
 
+   (*record list type*)
+  let global_typ = 
+    let find_list m (t, n) = match t with
+    | A.ListTyp a -> TypMap.add n a m 
+    | _ -> m
+    in List.fold_left find_list TypMap.empty globals
+  in
+
   let global_map = List.fold_left (fun map (t, n) -> StringMap.add n t map) StringMap.empty globals
   in
   (* Declare each global variable; remember its value in a map *)
@@ -217,9 +226,6 @@ let translate (statements, functions, structs) =
   let appendId_t    = L.function_type list_t [| list_t; L.pointer_type i8_t |] in
   let appendId_f    = L.declare_function "add_back" appendId_t the_module in
 
-  let indexIdList_t = L.function_type (L.pointer_type i8_t) [| list_t; i32_t |] in
-  let indexIdList_f = L.declare_function "index_acess" indexIdList_t the_module in
-
   let int_to_pointer_t = L.function_type (L.pointer_type i8_t) [| i32_t |] in
   let int_to_pointer_f = L.declare_function "int_to_pointer" int_to_pointer_t the_module in
 
@@ -237,6 +243,12 @@ let translate (statements, functions, structs) =
 
   let list_length_t = L.function_type i32_t [| list_t |] in
   let list_length_f = L.declare_function "length" list_length_t the_module in
+
+  let list_remove_t = L.function_type i32_t [| list_t; i32_t |] in
+  let list_remove_f = L.declare_function "remove_node" list_remove_t the_module in
+
+  let node_change_t = L.function_type i32_t [| list_t; i32_t; L.pointer_type i8_t |] in
+  let node_change_f = L.declare_function "node_change" node_change_t the_module in 
 
 (*   let removeIdList_t = L.function_type idlist_t [| idlist_t; L.pointer_type i8_t |] in
   let removeIdList_f = L.declare_function "removeIdList" removeIdList_t the_module in
@@ -340,6 +352,14 @@ let translate (statements, functions, structs) =
       let formals = List.fold_left2 add_formal StringMap.empty fdecl.A.formals
           (Array.to_list (L.params the_function)) in
       List.fold_left add_local formals locals in
+
+       (*record list type*)
+      let locals_typ = 
+        let find_list m (t, n) = match t with
+        | A.ListTyp a -> TypMap.add n a m 
+        | _ -> m
+        in List.fold_left find_list global_typ globals
+      in
     (* print_endline(string_of_int(StringMap.cardinal local_vars)); *)
 
 
@@ -386,6 +406,7 @@ let translate (statements, functions, structs) =
           | A.Block (block) -> test pass_list block
           | _ -> pass_list
         in List.fold_left test_function [] fdecl.A.body in
+
 
       let symbolmap = List.fold_left add_to_symbol_table SymbolsMap.empty fdecl.A.formals in
         List.fold_left add_to_symbol_table symbolmap locals in
@@ -543,29 +564,61 @@ let translate (statements, functions, structs) =
 
       | A.Objcall (objs, funs, args) ->
           let check_fun objs funs args = match funs with
-            | "add" -> let l_val = L.build_load (lookup objs) objs builder in
+            | "add" -> (let l_val = L.build_load (lookup objs) objs builder in
 (*             let check = L.build_call list_length_f [| l_val |] "tmp" builder in
  *)            
 (*                         print_endline(";"^ string_of_bool(L.is_null(check)));
                         print_endline(";"^ (L.string_of_llvalue(check)));
                         print_endline(";"^ (L.value_name(check))); *)
                        let d_val = expr builder (List.hd args) in
-                       let void_d_ptr = L.build_call int_to_pointer_f [| d_val |] "tmp" builder in
+                       let void_d_ptr =
+                       match TypMap.find objs locals_typ with
+                       | A.Int ->
+                       L.build_call int_to_pointer_f [| d_val |] "tmp" builder
+                       | A.Float ->
+                       L.build_call float_to_pointer_f [| d_val |] "tmp" builder
+                       | _ -> raise(Failure("List contains element other then int or float")) 
+                         in
                        let app = L.build_call appendId_f [| l_val; void_d_ptr |] "tmp" builder
                      in
-                       ignore (L.build_store app (lookup objs) builder);
-                       app
+                       (* ignore (L.build_store app (lookup objs) builder); *)
+                       app)
 
-            | "get" -> let l_val = L.build_load (lookup objs) objs builder in
+            | "get" -> (let l_val = L.build_load (lookup objs) objs builder in
                        let d_val = expr builder (List.hd args) in
                        let void_ptr = L.build_call index_acess_f [| l_val;d_val |] "tmp" builder in
+                       match TypMap.find objs locals_typ with
+                       | A.Int ->
                        L.build_call  pointer_to_int_f [| void_ptr |] "tmp" builder
+                       | A.Float ->
+                       L.build_call  pointer_to_float_f [| void_ptr |] "tmp" builder
+                       | _ -> raise(Failure("List contains element other then int or float")) 
+                       L.build_call  pointer_to_int_f [| void_ptr |] "tmp" builder)
                        (* let void_res = L.build_call index_acess_f [| void_d_ptr;d_val |] "tmp" builder in
                        L.build_call pointer_to_int_f [| void_res |] "tmp" builder *)
+
+            | "remove" -> (let l_val = L.build_load (lookup objs) objs builder in
+                          let d_val = expr builder (List.hd args) in
+                          let app = L.build_call list_remove_f [| l_val;d_val |] "rmv" builder in
+                            app )
 
             | _ -> L.const_int i32_t 42
           in 
           check_fun objs funs args
+      | A.ListAssign (id, pos, e) -> 
+                    (let l_val = L.build_load (lookup id) id builder in
+                      let position = expr builder pos in
+                      let data = expr builder e in
+                      let data2 = 
+                        match TypMap.find id locals_typ with
+                        | A.Int ->
+                        L.build_call  int_to_pointer_f [| data |] "tmp" builder
+                        | A.Float ->
+                        L.build_call  float_to_pointer_f [| data |] "tmp" builder
+                        | _ -> raise(Failure("List contains element other then int or float")) 
+                      in
+                      L.build_call node_change_f [| l_val;position;data2 |] "tmp" builder )
+                      
 
       | A.Call ("print", [e]) ->
         (* ignore(print_endline("; print")); *)

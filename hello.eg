@@ -1,21 +1,10 @@
 list int n;
-int a = 6;
-string xxxxx;
-
-int change(list int l){
-	l.add(5);
-}
 
 int main(){
-	string b = "sdfasdfwefwqefqe";
-	list int l;
-	change(l);
-	print(a);
-	print(l.get(0));
-	n.add(23);
+	n.add(10);
+	n.add(20);
+	n[0] = 100;
 	print(n.get(0));
-    l.add(2733);
-
 	return 0;
 }
 

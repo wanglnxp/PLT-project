@@ -182,7 +182,10 @@ let check (statements, functions, structs) =
         check_assign lt rt (Failure ("illegal assignment " ^ string_of_typ lt ^
 				     " = " ^ string_of_typ rt ^ " in " ^ 
 				     string_of_expr ex))
-      | Objcall(obj, meth, args) ->
+      | Objcall(obj, meth, args) -> 
+        if List.length args != 1 then
+        raise (Failure("list function "^meth^" should has one argument"))
+        else
         (match meth with
           "add" ->
           (let lst = type_of_identifier obj in
@@ -200,7 +203,14 @@ let check (statements, functions, structs) =
               ListTyp(t) -> t
             | _ -> raise (Failure("variable "^obj^" is not matching type of "^meth^" method "))
           )
-        | _ -> raise (Failure("have not define obj call"))
+            | "remove" -> 
+            (let lst = type_of_identifier obj in
+            match lst with
+              ListTyp(t) -> t
+            | _ -> raise (Failure("variable "^obj^" is not matching type of "^meth^" method "))
+          )
+
+        | a -> raise (Failure("have not define obj call " ^ a))
         )
       | Call(fname, actuals) as call -> 
          (let fd = function_decl fname in
@@ -217,6 +227,20 @@ let check (statements, functions, structs) =
                 " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e))))
              fd.formals actuals;
            fd.typ)
+
+      | ListAssign (id, pos, e) -> (let et = expr e in let el = type_of_identifier id in
+                match el with
+                ListTyp(t) ->
+                  (if t != et then
+                    raise (Failure(string_of_typ et ^"\'s type is differ from list "^id))
+                  else
+                    ListTyp(t) )
+                | _ -> raise (Failure("Not valid list type"))
+
+                  ignore(check_assign el et (Failure (string_of_typ et ^"\'s type is differ from list "^id)));
+                  et
+                                    )
+
       | StructAccess (id,field) -> ( let item = type_of_identifier id in
                                     match item with
                                       Objecttype st_n -> (let args = StringMap.find st_n struct_map in 

@@ -64,10 +64,29 @@ void *index_acess(struct NodeList *list, int id)
   return node->data;
 }
 
+int node_change(struct NodeList *list, int id, void *data)
+{
+  if (id >= length(list)){
+    perror("id is longer than list length");
+    exit(-1);
+  }
+  
+  struct ListNode* node = list->head;
+  while (id > 0){
+    node = node->next;
+    id--;
+  }
+
+  node->data = data;
+  return 0;
+}
+
 int remove_node(struct NodeList *list, int id)
 {
-  if (id >= length(list))
-    return -1;
+  if (id >= length(list)){
+    perror("id is longer than list length");
+    exit(-1);
+  }
 
   struct ListNode *dummy = (struct ListNode*) malloc(sizeof(struct ListNode));
   dummy->data = NULL;
@@ -121,9 +140,9 @@ void *int_to_pointer(int i)
    return (void*)pi;
 }
 
-void *float_to_pointer(float f)
+void *float_to_pointer(double f)
 {
-   float *pf = (float *)malloc(sizeof(float));
+   double *pf = (double *)malloc(sizeof(double));
    *pf = f;
    return (void*)pf;
 }
@@ -133,9 +152,9 @@ int pointer_to_int(void *pi)
    return *((int*)pi);
 }
 
-float pointer_to_float(void *pf)
+double pointer_to_float(void *pf)
 {
-   return *((float*)pf);
+   return *((double*)pf);
 }
 
 int print_bool(int a)
