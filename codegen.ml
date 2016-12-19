@@ -353,18 +353,41 @@ let translate (statements, functions, structs) =
           (Array.to_list (L.params the_function)) in
       List.fold_left add_local formals locals in
 
+      let locals =
+        let rec test pass_list = function
+            [] -> pass_list
+          | hd :: tl -> let newlist = 
+                          let match_fuc hd pass_list= match hd with
+                            A.Vdecl (a, b) -> (a, b)::pass_list
+                          | A.Block (a) -> test pass_list a
+                          | _ -> pass_list
+                          in match_fuc hd pass_list
+                        in test newlist tl
+
+        in
+        let test_function pass_list head = match head with
+            A.Vdecl (a, b) -> (a, b)::pass_list
+          | A.Block (block) -> test pass_list block
+          | _ -> pass_list
+        in List.fold_left test_function [] fdecl.A.body in
+
        (*record list type*)
       let locals_typ = 
         let find_list m (t, n) = match t with
         | A.ListTyp a -> TypMap.add n a m 
         | _ -> m
-        in List.fold_left find_list global_typ globals
+        in List.fold_left find_list global_typ (fdecl.A.formals@locals)
       in
     (* print_endline(string_of_int(StringMap.cardinal local_vars)); *)
 
+    (* Return list type when called *)
+    let look_typ n = try TypMap.find n locals_typ
+                  with Not_found -> raise(Failure("No matching list type in any variable"))
+    in
+
     (* Return the value for a variable or formal argument, for a struct return the pointer *)
     let lookup n = try StringMap.find n local_vars
-                  with Not_found -> try StringMap.find n global_vars with Not_found -> raise(Failure("No matching pattern in Global_vars access in lookup"))
+                  with Not_found -> try StringMap.find n global_vars with Not_found -> raise(Failure("No matching pattern in Local_vars/Global_vars access in lookup"))
     in
 
     let symbol_vars =
@@ -555,7 +578,7 @@ let translate (statements, functions, structs) =
                        print_endline(";"^ (L.value_name(check))); *)
                        let d_val = expr builder (List.hd args) in
                        let void_d_ptr =
-                       match TypMap.find objs locals_typ with
+                       match look_typ objs with
                        | A.Int ->
                        L.build_call int_to_pointer_f [| d_val |] "tmp" builder
                        | A.Float ->
@@ -570,7 +593,7 @@ let translate (statements, functions, structs) =
             | "get" -> (let l_val = L.build_load (lookup objs) objs builder in
                        let d_val = expr builder (List.hd args) in
                        let void_ptr = L.build_call index_acess_f [| l_val;d_val |] "tmp" builder in
-                       match TypMap.find objs locals_typ with
+                       match look_typ objs with
                        | A.Int ->
                        L.build_call  pointer_to_int_f [| void_ptr |] "tmp" builder
                        | A.Float ->

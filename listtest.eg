@@ -1,7 +1,7 @@
-
 int main(){
 	list int l;
 	l.add(3);
+	print(l.get(0));
 	return 0;
 }
 
