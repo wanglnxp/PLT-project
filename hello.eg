@@ -1,20 +1,21 @@
-list int l;
 list int n;
+int a = 6;
+string xxxxx;
 
-struct person[
-	int age;
-]
+int change(list int l){
+	l.add(5);
+}
+
 int main(){
-	struct person a;
-	a.age = 10;
-    l.add(2733);
-    l.add(444);
-    l.add(1234);
+	string b = "sdfasdfwefwqefqe";
+	list int l;
+	change(l);
+	print(a);
 	print(l.get(0));
-	print(0==0);
-	int xxx = 9;
-	print(xxx==9);
-	print("hello world");
+	n.add(23);
+	print(n.get(0));
+    l.add(2733);
+
 	return 0;
 }
 

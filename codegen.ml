@@ -151,14 +151,24 @@ let translate (statements, functions, structs) =
     | A.StringLit s -> (* str_t *) (* ignore(L.define_global ("test") (L.const_stringz context s) the_module );  *) L.const_pointer_null str_t (* L.const_stringz context s *)
     | A.BoolLit b -> L.const_int i1_t (if b then 1 else 0)
     (* | A.Id s -> L.build_load (lookup_global s) s *)
-    | A.Assign (s, e) -> let e' = global_expr e 
-                    and gl = lookup_global s
-                    and t = StringMap.find s global_map in
+    | A.Assign (s, e) -> 
+                    (* match e with
+                    | A.StringLit cont-> let gl = lookup_global s in
+                     (ignore (L.delete_global gl);
+                      L.define_global s (L.const_stringz context cont) the_module)
+                    | _ -> ( *)
+                    match e with
+                    | A.Literal _ 
+                    | A.FloatLit _
+                    | A.BoolLit _ -> 
+                    let e' = global_expr e
+                    and gl = lookup_global s in
                     (* match t with 
                     | A.Str ->(ignore (L.delete_global gl);
                       ignore(L.define_global s (e') the_module ); e')
                     | _ -> *)(ignore (L.delete_global gl);
                         ignore (L.define_global s e' the_module); e')
+                    | _ -> raise(Failure("Assign variable type is not primitive type"))
 
     | _ -> raise(Failure("Expression not allowed in global"))
   in
@@ -248,14 +258,9 @@ let translate (statements, functions, structs) =
   (* Fill in the body of the given function *)
   let build_function_body fdecl =
     let (the_function, _) = try StringMap.find fdecl.A.fname function_decls 
-                            with Not_found -> raise(Failure("No matching pattern in build_function_body"))in
+                            with Not_found -> raise(Failure("No matching pattern in build_function_body"))
+    in
 
- (*    if fdecl.A.name == "main" then
-      (ignore(print_endline("; I am in main"));)
-
-    else
-      (ignore(print_endline("; I am in other func"));)
- *)
     let builder = L.builder_at_end context (L.entry_block the_function) in
     let local_struct_datatypes:(string, string) Hashtbl.t = Hashtbl.create 10 in
 
@@ -292,15 +297,17 @@ let translate (statements, functions, structs) =
          (* l_val = L.build_load (lookup objs) objs builder in
             let check = L.build_call list_length_f [| l_val |] "tmp" builder in
             let l_val = L.build_call initIdList_f [||] "init" builder in *)
-      let add_local m (t, n) =
-	       let local_t = match t with
-                |Objecttype(struct_n) ->
-                    ignore(Hashtbl.add struct_datatypes n struct_n);  (* add to map name vs type *)
-                    find_struct struct_n
-                | _ -> ltype_of_typ t
-          in
-          let llvm_for_allocation = L.build_alloca local_t n builder in
-        StringMap.add n llvm_for_allocation m
+      let add_local m (t, n) = 
+        match t with
+            Objecttype(struct_n) -> ignore(Hashtbl.add struct_datatypes n struct_n);
+            StringMap.add n (L.build_alloca (find_struct struct_n) n builder) m
+          | ListTyp(ty) -> 
+              let alloc = L.build_alloca (ltype_of_typ t) n builder in
+              let p = L.build_call initIdList_f [||] "init" builder in
+              ignore (L.build_store p alloc builder);
+              StringMap.add n alloc m
+          | _ -> 
+          StringMap.add n (L.build_alloca (ltype_of_typ t) n builder) m
       in
 
       let locals =
@@ -320,11 +327,37 @@ let translate (statements, functions, structs) =
           | A.Block (block) -> test pass_list block
           | _ -> pass_list
         in List.fold_left test_function [] fdecl.A.body in
-      
+
+      let locals = 
+          if fdecl.A.fname = "main" then
+          let add_list old_list (t, n) = match t with
+              ListTyp(ty) -> (t, n) :: old_list
+            | _ -> old_list
+          in List.fold_left add_list locals globals
+        else locals
+      in
+        
       let formals = List.fold_left2 add_formal StringMap.empty fdecl.A.formals
           (Array.to_list (L.params the_function)) in
       List.fold_left add_local formals locals in
     (* print_endline(string_of_int(StringMap.cardinal local_vars)); *)
+
+
+    (*for main function, renew global variable*)
+    (* if fdecl.A.fname = "main" then
+      (ignore(print_endline("; I am in main"));
+      let find_list (t, n) = match t with
+         ListTyp(ty) -> 
+          (* let mpp = StringMap.find n global_vars in
+          let tmp = L.build_load (mpp) n builder in *)
+          let alloc = L.build_alloca (ltype_of_typ t) n builder in
+          let p = L.build_call initIdList_f [||] "init" builder in
+          ignore (L.build_store p alloc builder);
+        | _ -> ()
+      in
+      List.iter find_list globals)
+    else
+      ignore(print_endline("; I am in other func")); *)
 
     (* Return the value for a variable or formal argument, for a struct return the pointer *)
     let lookup n = try StringMap.find n local_vars
@@ -460,7 +493,7 @@ let translate (statements, functions, structs) =
       | A.Noexpr -> L.const_int i32_t 0
       | A.Id s -> L.build_load (lookup s) s builder
       | A.StructAccess (id,field) -> 
-      ignore(print_endline("; SAccess"^id));(
+      (* ignore(print_endline("; SAccess"^id)); *)(
             struct_access id field true builder
         )
       | A.Binop (e1, op, e2) ->
@@ -469,7 +502,7 @@ let translate (statements, functions, structs) =
          let combine = (L.string_of_lltype(L.type_of e1'), L.string_of_lltype(L.type_of e2'))
           in
             let binop_match combine e1' e2'= match combine with
-                ("i32", "i32") -> ignore(print_endline("; binop"^string_of_llvalue(e2')));(int_binops op) e1' e2' "tmp" builder
+                ("i32", "i32") -> (* ignore(print_endline("; binop"^string_of_llvalue(e2'))); *)(int_binops op) e1' e2' "tmp" builder
               | ("double", "i32") -> let e3' = build_sitofp e2' flt_t "x" builder in (float_binops op) e1' e3' "tmp" builder
               | ("i32", "double") -> let e3' = build_sitofp e1' flt_t "x" builder in (float_binops op) e3' e2' "tmp" builder
               | ("double", "double") -> (float_binops op) e1' e2' "tmp" builder
@@ -511,12 +544,11 @@ let translate (statements, functions, structs) =
       | A.Objcall (objs, funs, args) ->
           let check_fun objs funs args = match funs with
             | "add" -> let l_val = L.build_load (lookup objs) objs builder in
-            let check = L.build_call list_length_f [| l_val |] "tmp" builder in
-            
-                        print_endline(";"^ string_of_bool(L.is_null(check)));
+(*             let check = L.build_call list_length_f [| l_val |] "tmp" builder in
+ *)            
+(*                         print_endline(";"^ string_of_bool(L.is_null(check)));
                         print_endline(";"^ (L.string_of_llvalue(check)));
-                        print_endline(";"^ (L.value_name(check)));
-                       let l_val = L.build_call initIdList_f [||] "init" builder in
+                        print_endline(";"^ (L.value_name(check))); *)
                        let d_val = expr builder (List.hd args) in
                        let void_d_ptr = L.build_call int_to_pointer_f [| d_val |] "tmp" builder in
                        let app = L.build_call appendId_f [| l_val; void_d_ptr |] "tmp" builder
@@ -537,7 +569,7 @@ let translate (statements, functions, structs) =
           check_fun objs funs args
 
       | A.Call ("print", [e]) ->
-        ignore(print_endline("; print"));
+        (* ignore(print_endline("; print")); *)
         let e' = expr builder e in
         let typ_e' = L.string_of_lltype(L.type_of e') in
           if typ_e' = "i1" then
@@ -547,7 +579,7 @@ let translate (statements, functions, structs) =
             L.build_call printf_func [| format_str typ_e' ; L.build_global_stringptr ("flase") "str" builder |] "printf" builder *)
             let e1' = build_sitofp e' flt_t "x" builder in
             let e2' = build_fptosi e1' i32_t "x2" builder in
-            ignore(print_endline("; "^L.string_of_lltype(L.type_of e2')));
+            (* ignore(print_endline("; "^L.string_of_lltype(L.type_of e2'))); *)
             L.build_call print_bool_f [| e2' |] "print_bool" builder
             (* L.build_call printf_func [| format_str typ_e' ; e' |] "printf" builder *)
           else
@@ -578,13 +610,13 @@ let translate (statements, functions, structs) =
        the statement's successor *)
     let rec stmt builder = function
         A.Block sl -> List.fold_left stmt builder sl
-      | A.Vdecl (t, n) -> ignore(print_endline("; Vdecl "^n));builder
+      | A.Vdecl (t, n) -> (* ignore(print_endline("; Vdecl "^n)); *)builder
       | A.Elseif _ -> builder
       | A.Foreach _ -> builder
       | A.Break  -> builder
       | A.Continue  -> builder
       | A.Expr e -> ignore (try expr builder e with Not_found -> raise(Failure("In stmt function Expr error"))); builder
-      | A.Return e -> ignore(print_endline("; Return")); ignore (match fdecl.A.typ with
+      | A.Return e -> (* ignore(print_endline("; Return")); *) ignore (match fdecl.A.typ with
           A.Void -> L.build_ret_void builder
         | _ -> L.build_ret (expr builder e) builder); builder
 

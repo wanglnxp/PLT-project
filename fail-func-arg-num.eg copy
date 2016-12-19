@@ -1,0 +1,10 @@
+int get(int x, int b){
+	return 0;
+}
+
+int main(){
+	int b = 10 ;
+	print(get(b));
+	return 0;
+}
+

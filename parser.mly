@@ -51,9 +51,9 @@ vdecl:
    typ ID SEMI             { Vdecl($1, $2) }
   |typ ID ASSIGN expr SEMI { Block([Vdecl($1, $2);Expr(Assign($2,$4))]) }
 
-sdecl_list:
-    /* nothing */    { [] }
-  | sdecl_list sdecl { $2 :: $1 }
+/*sdecl_list:
+       { [] }
+  | sdecl_list sdecl { $2 :: $1 }*/
 
 sdecl:
   STRUCT ID LBRACKET vdecl_list RBRACKET

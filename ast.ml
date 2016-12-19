@@ -115,11 +115,12 @@ let rec string_of_expr = function
   | StructAccess(v, seg) -> v ^ "." ^ seg
   | Noexpr -> ""
 
-let string_of_typ = function
+let rec string_of_typ = function
     Int -> "int"
   | Bool -> "bool"
   | Float -> "float"
   | Str -> "string"
   | Void -> "void"
-  | ListTyp _ -> "list"
-  | Objecttype _ -> "struct"
+  | ListTyp a -> "list " ^ string_of_typ a
+  | Objecttype s -> "struct " ^ s
+  | _ -> raise(Failure("no matching type to print this type"))
