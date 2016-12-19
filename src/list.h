@@ -32,4 +32,6 @@ int pointer_to_int(void *pi);
 
 float pointer_to_float(void *pf);
 
+int print_bool(char *format);
+
 #endif /* #ifndef _SOURCE_H_ */

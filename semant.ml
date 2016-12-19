@@ -182,7 +182,9 @@ let check (statements, functions, structs) =
           )
         | _ -> raise (Failure("have not define obj call"))
         )
-      | Call(fname, actuals) as call -> let fd = function_decl fname in
+      | Call(fname, actuals) as call -> if fname = "print" then Int 
+        else
+         let fd = function_decl fname in
          if List.length actuals != List.length fd.formals then
            raise (Failure ("expecting " ^ string_of_int
              (List.length fd.formals) ^ " arguments in " ^ string_of_expr call))

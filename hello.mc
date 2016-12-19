@@ -11,6 +11,8 @@ int main(){
     l.add(444);
     l.add(1234);
 	print(l.get(0));
+	print(0==0);
+	print("hello world");
 	return 0;
 }
 

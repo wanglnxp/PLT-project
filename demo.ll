@@ -9,6 +9,9 @@
 ;  %tmp9 = call i32 @length(%struct.NodeList* %l8)
 ;tmp9
 ; print
+; print
+; binopi32 0
+; print
 ; Return
 ; ModuleID = 'MicroC'
 
@@ -22,10 +25,11 @@
 @fmt.1 = private unnamed_addr constant [4 x i8] c"%f\0A\00"
 @fmt.2 = private unnamed_addr constant [4 x i8] c"%d\0A\00"
 @fmt.3 = private unnamed_addr constant [4 x i8] c"%s\0A\00"
+@str = private unnamed_addr constant [12 x i8] c"hello world\00"
 
 declare i32 @printf(i8*, ...)
 
-declare i32 @print_number(i32)
+declare i32 @print_bool(i8*)
 
 declare %struct.NodeList* @init_List()
 
@@ -70,5 +74,7 @@ entry:
   %tmp14 = call i8* @index_acess(%struct.NodeList* %l13, i32 0)
   %tmp15 = call i32 @pointer_to_int(i8* %tmp14)
   %printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @fmt, i32 0, i32 0), i32 %tmp15)
+  %printf16 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @fmt, i32 0, i32 0), i1 true)
+  %printf17 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @fmt.3, i32 0, i32 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @str, i32 0, i32 0))
   ret i32 0
 }

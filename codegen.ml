@@ -197,8 +197,8 @@ let translate (statements, functions, structs) =
  
   let printf_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
   let printf_func = L.declare_function "printf" printf_t the_module in
-  let print_number_ty = L.function_type i32_t [| i32_t |] in
-  let print_number_func = L.declare_function "print_number" print_number_ty the_module in 
+  let print_bool_t = L.function_type i32_t [| L.pointer_type i8_t |] in
+  let print_bool_f = L.declare_function "print_bool" print_bool_t the_module in 
 
   (* Declare list functions *)
   let initIdList_t  = L.function_type list_t [| |] in
@@ -249,6 +249,13 @@ let translate (statements, functions, structs) =
   let build_function_body fdecl =
     let (the_function, _) = try StringMap.find fdecl.A.fname function_decls 
                             with Not_found -> raise(Failure("No matching pattern in build_function_body"))in
+
+ (*    if fdecl.A.name == "main" then
+      (ignore(print_endline("; I am in main"));)
+
+    else
+      (ignore(print_endline("; I am in other func"));)
+ *)
     let builder = L.builder_at_end context (L.entry_block the_function) in
     let local_struct_datatypes:(string, string) Hashtbl.t = Hashtbl.create 10 in
 
@@ -362,7 +369,7 @@ let translate (statements, functions, structs) =
           "i32"    -> int_format_str
         | "double"  -> float_format_str
         | "i8*" -> string_format_str
-        | "i1" -> string_format_str
+        | "i1" -> int_format_str
         | _ -> (* string_format_str *) raise (Failure "Invalid printf type")
     in
 
@@ -532,17 +539,15 @@ let translate (statements, functions, structs) =
         let e' = expr builder e in
         let typ_e' = L.string_of_lltype(L.type_of e') in
           if typ_e' = "i1" then
-            if (L.string_of_llvalue(e')) = "i1 true" then
+            (* if (L.string_of_llvalue(e')) = "i1 true" then
             L.build_call printf_func [| format_str typ_e' ; L.build_global_stringptr ("true") "str" builder |] "printf" builder
             else
-            L.build_call printf_func [| format_str typ_e' ; L.build_global_stringptr ("flase") "str" builder |] "printf" builder
+            L.build_call printf_func [| format_str typ_e' ; L.build_global_stringptr ("flase") "str" builder |] "printf" builder *)
+            L.build_call printf_func [| format_str typ_e' ; e' |] "printf" builder
           else
           L.build_call printf_func [| format_str typ_e' ; e' |] "printf" builder
           (* L.build_call printf_func [| int_format_str ; (expr builder e) |]
           "printf" builder *)
-         
-      | A.Call ("test_print_number", [e]) ->
-        L.build_call print_number_func [| (expr builder e) |] "print_number" builder
          
       | A.Call (f, act) ->
          let (fdef, fdecl) = try StringMap.find f function_decls 
