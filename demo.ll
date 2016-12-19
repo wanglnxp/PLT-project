@@ -11,6 +11,11 @@
 ; print
 ; print
 ; binopi32 0
+; i32
+; Vdecl xxx
+; print
+; binopi32 9
+; i32
 ; print
 ; Return
 ; ModuleID = 'MicroC'
@@ -29,7 +34,7 @@
 
 declare i32 @printf(i8*, ...)
 
-declare i32 @print_bool(i8*)
+declare i32 @print_bool(i32)
 
 declare %struct.NodeList* @init_List()
 
@@ -49,6 +54,7 @@ declare i32 @length(%struct.NodeList*)
 
 define i32 @main() {
 entry:
+  %xxx = alloca i32
   %a = alloca %person
   %age = getelementptr inbounds %person, %person* %a, i32 0, i32 1
   store i32 10, i32* %age
@@ -74,7 +80,13 @@ entry:
   %tmp14 = call i8* @index_acess(%struct.NodeList* %l13, i32 0)
   %tmp15 = call i32 @pointer_to_int(i8* %tmp14)
   %printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @fmt, i32 0, i32 0), i32 %tmp15)
-  %printf16 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @fmt, i32 0, i32 0), i1 true)
-  %printf17 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @fmt.3, i32 0, i32 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @str, i32 0, i32 0))
+  %print_bool = call i32 @print_bool(i32 -1)
+  store i32 9, i32* %xxx
+  %xxx16 = load i32, i32* %xxx
+  %tmp17 = icmp eq i32 %xxx16, 9
+  %x = sitofp i1 %tmp17 to double
+  %x2 = fptosi double %x to i32
+  %print_bool18 = call i32 @print_bool(i32 %x2)
+  %printf19 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @fmt.3, i32 0, i32 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @str, i32 0, i32 0))
   ret i32 0
 }

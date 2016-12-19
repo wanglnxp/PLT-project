@@ -12,6 +12,8 @@ int main(){
     l.add(1234);
 	print(l.get(0));
 	print(0==0);
+	int xxx = 9;
+	print(xxx==9);
 	print("hello world");
 	return 0;
 }

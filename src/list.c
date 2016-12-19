@@ -138,10 +138,8 @@ float pointer_to_float(void *pf)
    return *((float*)pf);
 }
 
-int print_bool(char *format)
+int print_bool(int a)
 {
-    printf("%s/n", format);
-    int a = 0;
     fputs(a ? "true\n" : "false\n", stdout);
     return a;
 }

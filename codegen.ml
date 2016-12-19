@@ -197,7 +197,7 @@ let translate (statements, functions, structs) =
  
   let printf_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
   let printf_func = L.declare_function "printf" printf_t the_module in
-  let print_bool_t = L.function_type i32_t [| L.pointer_type i8_t |] in
+  let print_bool_t = L.function_type i32_t [| i32_t |] in
   let print_bool_f = L.declare_function "print_bool" print_bool_t the_module in 
 
   (* Declare list functions *)
@@ -543,7 +543,11 @@ let translate (statements, functions, structs) =
             L.build_call printf_func [| format_str typ_e' ; L.build_global_stringptr ("true") "str" builder |] "printf" builder
             else
             L.build_call printf_func [| format_str typ_e' ; L.build_global_stringptr ("flase") "str" builder |] "printf" builder *)
-            L.build_call printf_func [| format_str typ_e' ; e' |] "printf" builder
+            let e1' = build_sitofp e' flt_t "x" builder in
+            let e2' = build_fptosi e1' i32_t "x2" builder in
+            ignore(print_endline("; "^L.string_of_lltype(L.type_of e2')));
+            L.build_call print_bool_f [| e2' |] "print_bool" builder
+            (* L.build_call printf_func [| format_str typ_e' ; e' |] "printf" builder *)
           else
           L.build_call printf_func [| format_str typ_e' ; e' |] "printf" builder
           (* L.build_call printf_func [| int_format_str ; (expr builder e) |]
