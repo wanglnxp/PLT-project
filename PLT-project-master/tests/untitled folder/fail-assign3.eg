@@ -1,0 +1,9 @@
+
+
+void myvoid(){
+}
+
+int main(){
+	int i;
+	i = myvoid(); /* Fail: assign void to integer */
+}

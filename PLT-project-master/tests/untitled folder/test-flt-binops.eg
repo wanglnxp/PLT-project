@@ -1,0 +1,19 @@
+int main(){
+	float x=6.11;
+	float y=3.45;
+	printf(x+y);
+	printf(x-y);
+	printf(x*y);
+	printf(x/y);
+	printf(x+y);
+	/*Bad. all printed 0.0000???*/
+	printb(x==y);
+	printb(x<=y);
+	printb(x>=y);
+	printb(x<y);
+	printb(x>y);
+	printb(x!=y);
+	/*Bad. below error*/
+	return 0;
+}
+/*Fatal error: exception Failure("Not a bool type")*/

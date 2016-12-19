@@ -1,0 +1,14 @@
+int change(int a){
+	a = a+1;
+	int b;
+	int b = 10;
+	return a;
+}
+
+int main(){
+	int a = 9;
+	a = change(a);
+	print(a);
+}
+
+／* bad *／
