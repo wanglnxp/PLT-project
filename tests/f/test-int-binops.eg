@@ -1,0 +1,18 @@
+int main(){
+	int x=5;
+	int y=3;
+	print(x+y);
+	print(x-y);
+	print(x*y);
+	print(x/y);
+	print(x+y);
+	print(x==y);
+	print(x<=y);
+	print(x>=y);
+	print(x<y);
+	print(x>y);
+	print(x!=y);
+	return 0;
+}
+
+/*comparator*/

@@ -562,7 +562,6 @@ let translate (statements, functions, structs) =
                        L.build_call  pointer_to_int_f [| void_ptr |] "tmp" builder
                        (* let void_res = L.build_call index_acess_f [| void_d_ptr;d_val |] "tmp" builder in
                        L.build_call pointer_to_int_f [| void_res |] "tmp" builder *)
-                       
 
             | _ -> L.const_int i32_t 42
           in 

@@ -12,4 +12,5 @@ int main(){
 	struct person a;
 	a.age = 100;
 	print(get(a));
+	return 0;
 }

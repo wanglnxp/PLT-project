@@ -85,8 +85,8 @@ Check() {
     generatedfiles="$generatedfiles ${basename}.ll ${basename}.out" &&
     Run "clang -emit-llvm -o list.bc -c src/list.c" &&
     Run "$EGRAPHER" "<" $1 ">" "${basename}.ll" &&
-	RUN "$LLL" "${basename}.ll list.bc" -o "${basename}.out" &&
-    Run "$LLI" "${basename}.out" &&
+	Run "$LLL" "${basename}.ll list.bc" "-o" "a.out" &&
+    Run "$LLI" "a.out" ">" "${basename}.out"&&
     Compare ${basename}.out ${reffile}.out ${basename}.diff
 
     # Report the status and clean up the generated files

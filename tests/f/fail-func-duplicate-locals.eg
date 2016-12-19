@@ -1,13 +1,13 @@
 int change(int a){
-	int a = 9;
 	a = a+1;
+	int b;
+	int b = 10;
 	return a;
 }
-
 int main(){
 	int a = 9;
 	a = change(a);
 	print(a);
+	return 0;
 }
 
-／* bad *／

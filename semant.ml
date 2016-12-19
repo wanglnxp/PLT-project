@@ -164,7 +164,7 @@ let check (statements, functions, structs) =
           		  Add | Sub | Mult | Div when (t1 = Int || t1 = Float) && (t2 = Int || t2 = Float) -> (if t1 = Float || t2 = Float then Float
           		  						 else Int)
 				| Equal | Neq when t1 = t2 -> Bool
-				| Less | Leq | Greater | Geq when t1 = Int && t2 = Int -> Bool
+				| Less | Leq | Greater | Geq when (t1 = Int || t1 = Float) && (t2 = Int || t2 = Float) -> Bool
 				| And | Or when t1 = Bool && t2 = Bool -> Bool
         		| _ -> raise (Failure ("illegal binary operator " ^
               		string_of_typ t1 ^ " " ^ string_of_op op ^ " " ^

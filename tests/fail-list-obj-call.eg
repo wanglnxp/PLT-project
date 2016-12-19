@@ -1,0 +1,9 @@
+list int l;
+
+int main(){
+	l.add(12);
+	l.add(2);
+	print(l.get(0));
+	print(l.get(2));
+	return 0;
+}
