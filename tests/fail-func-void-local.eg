@@ -1,0 +1,16 @@
+
+
+int change(int a){
+	a = a+1;
+	void b;
+	return a;
+}
+
+int main(){
+
+	int i = 0;
+	change(i);
+
+}
+
+

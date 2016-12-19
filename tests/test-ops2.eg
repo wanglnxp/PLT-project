@@ -1,0 +1,21 @@
+int main(){
+  bool x;
+  print(true);
+  print(false);
+  x = true && false;
+  x = x && x;
+
+  print(true && true);
+  print(true && false);
+  print(false && true);
+  print(false && x);
+
+  print(true || true);
+  print(true || false);
+  print(false || true);
+  print(false || false);
+  print(!false);
+  print(!true);
+  return 0;
+}
+

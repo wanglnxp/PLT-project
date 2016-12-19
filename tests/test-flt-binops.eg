@@ -1,0 +1,16 @@
+int main(){
+	float x=6.11;
+	float y=3.45;
+	print(x+y);
+	print(x-y);
+	print(x*y);
+	print(x/y);
+	print(x+y);
+	print(x==y);
+	print(x<=y);
+	print(x>=y);
+	print(x<y);
+	print(x>y);
+	print(x!=y);
+	return 0;
+}

@@ -1,0 +1,11 @@
+int main(){
+	if(false){
+		print(123);
+	}
+	else{
+		print(321);
+	}
+	return 0;
+}
+
+/*good*/

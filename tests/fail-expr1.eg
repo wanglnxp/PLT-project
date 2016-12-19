@@ -1,0 +1,5 @@
+int main(){
+	int a = 1;
+	bool b = true;
+	a = a + b; /* Error, bool add int */
+}

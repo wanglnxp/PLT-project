@@ -1,0 +1,20 @@
+struct person[
+	string name;
+	int age;
+]
+struct xxxx[
+	string name;
+	int age;
+]
+
+int get(struct xxxx a){
+	print(a.age);
+	return a.age;
+}
+
+int main(){
+	struct person a;
+	a.age = 100;
+	print(get(a));
+	return 0;
+}

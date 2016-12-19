@@ -362,23 +362,6 @@ let translate (statements, functions, structs) =
       in
     (* print_endline(string_of_int(StringMap.cardinal local_vars)); *)
 
-
-    (*for main function, renew global variable*)
-    (* if fdecl.A.fname = "main" then
-      (ignore(print_endline("; I am in main"));
-      let find_list (t, n) = match t with
-         ListTyp(ty) -> 
-          (* let mpp = StringMap.find n global_vars in
-          let tmp = L.build_load (mpp) n builder in *)
-          let alloc = L.build_alloca (ltype_of_typ t) n builder in
-          let p = L.build_call initIdList_f [||] "init" builder in
-          ignore (L.build_store p alloc builder);
-        | _ -> ()
-      in
-      List.iter find_list globals)
-    else
-      ignore(print_endline("; I am in other func")); *)
-
     (* Return the value for a variable or formal argument, for a struct return the pointer *)
     let lookup n = try StringMap.find n local_vars
                   with Not_found -> try StringMap.find n global_vars with Not_found -> raise(Failure("No matching pattern in Global_vars access in lookup"))
@@ -567,9 +550,9 @@ let translate (statements, functions, structs) =
             | "add" -> (let l_val = L.build_load (lookup objs) objs builder in
 (*             let check = L.build_call list_length_f [| l_val |] "tmp" builder in
  *)            
-(*                         print_endline(";"^ string_of_bool(L.is_null(check)));
-                        print_endline(";"^ (L.string_of_llvalue(check)));
-                        print_endline(";"^ (L.value_name(check))); *)
+(*                     print_endline(";"^ string_of_bool(L.is_null(check)));
+                       print_endline(";"^ (L.string_of_llvalue(check)));
+                       print_endline(";"^ (L.value_name(check))); *)
                        let d_val = expr builder (List.hd args) in
                        let void_d_ptr =
                        match TypMap.find objs locals_typ with
