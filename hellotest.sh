@@ -11,7 +11,7 @@ echo
 
 clang -emit-llvm -o list.bc -c src/list.c
 # clang -S -emit-llvm ./list.c
-./microc.native < $1 > demo.ll
+./egrapher.native < $1 > demo.ll
 /usr/local/opt/llvm/bin/llvm-link demo.ll list.bc -o a.out
 /usr/local/opt/llvm/bin/lli a.out
 

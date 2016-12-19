@@ -1,5 +1,0 @@
-int main(){
-	int a;
-	bool b;
-	b = 10; /* Fail: assigning interger to bool */
-}

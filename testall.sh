@@ -1,9 +1,9 @@
 #!/bin/sh
 #Run testcases under dir /tests
-
+make
 # Path to the LLVM interpreter
-LLI="/usr/local/opt/llvm38/bin/lli-3.8"
-LLL="/usr/local/opt/llvm38/bin/llvm-link-3.8"
+LLI="/usr/local/opt/llvm/bin/lli"
+LLL="/usr/local/opt/llvm/bin/llvm-link"
 
 
 # Path to the egrapher compiler.  Usually "./egrapher.native"
@@ -83,8 +83,9 @@ Check() {
     generatedfiles=""
 
     generatedfiles="$generatedfiles ${basename}.ll ${basename}.out" &&
+    Run "clang -emit-llvm -o list.bc -c src/list.c" &&
     Run "$EGRAPHER" "<" $1 ">" "${basename}.ll" &&
-	RUN "$LLL" "${basename}.ll" -o "${basename}.out" &&
+	RUN "$LLL" "${basename}.ll list.bc" -o "${basename}.out" &&
     Run "$LLI" "${basename}.out" &&
     Compare ${basename}.out ${reffile}.out ${basename}.diff
 

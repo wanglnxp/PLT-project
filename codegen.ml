@@ -30,7 +30,7 @@ let struct_field_datatypes:(string, typ) Hashtbl.t = Hashtbl.create 50
 
 let translate (statements, functions, structs) =
   let context = L.global_context () in
-  let the_module = L.create_module context "MicroC" in
+  let the_module = L.create_module context "eGrapher" in
   let llctx = L.global_context () in
   let llmem = L.MemoryBuffer.of_file "list.bc" in
   let llm = Llvm_bitreader.parse_bitcode llctx llmem in
@@ -289,7 +289,9 @@ let translate (statements, functions, structs) =
                       ignore (L.build_store p local builder); local
           in
          StringMap.add n formal m in 
-
+         (* l_val = L.build_load (lookup objs) objs builder in
+            let check = L.build_call list_length_f [| l_val |] "tmp" builder in
+            let l_val = L.build_call initIdList_f [||] "init" builder in *)
       let add_local m (t, n) =
 	       let local_t = match t with
                 |Objecttype(struct_n) ->

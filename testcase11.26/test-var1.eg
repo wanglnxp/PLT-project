@@ -1,7 +1,0 @@
-int main(){
-	int a;
-	a = 37;
-	print(a);
-	return 0;
-}
-/*good. 37*/
