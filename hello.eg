@@ -1,50 +1,10 @@
 
-
-void swap(list int l, int i, int k){
-	int temp = l.get(i);
-	l[0] = l.get(k);
-	l[k] = temp;
-}
-
-int partition(list int l, int left, int right){
-	int storeIndex = left;
-	int pivot = l.get(right);
-	int i;
-	for(i=left;i<right;i=i+1){
-		if(l[i]<pivot){
-			swap(l,storeIndex,i);
-			storeIndex = storeIndex + 1;
-		}	
-	}
-	swap(l,right,storeIndex);
-	return storeIndex;
-}
-/*
-
-void sort(list int l, int left, int right){
-	if(left > right){
-		return;
-	}
-	int storeIndex = partition(l,left,right);
-	sort(l,left,storeIndex - 1);
-	sort(l,storeIndex+1,right);
-
-}
-*/
-list int l;
-
 int main(){
-	
-	l.add(3);
-	l.add(2);
-	l.add(5);
-	l.add(4);
-	l.add(1);
-	sort(l,0,4);
-	int i;
-	for(i=0;i<5;i=i+1){
-		print(l.get(i));
-	}
+	list int l;
+	int a=2;
+	l.add(a);
+	triangle(0.0,0.5,-1.0,-1.0,1.0,-1.0);
+	print(l.get(0));
 	return 0;
 }
 
