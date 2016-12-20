@@ -85,8 +85,8 @@ let check (statements, functions, structs) =
   (* Function declaration for a named function *)
   let built_in_decls =  StringMap.add "print"
      { typ = Void; fname = "print"; formals = [(Int, "x")];
-        body = [] } (StringMap.singleton "plot"
-     { typ = Void; fname = "printb"; formals = [(Bool, "x")];
+        body = [] } (StringMap.singleton "triangle"
+     { typ = Void; fname = "triangle"; formals = [(Float, "x1");(Float, "x2");(Float, "x3");(Float, "x4");(Float, "x5");(Float, "x6")];
         body = [] })
    in
    (* let built_in_decls = StringMap.add "prints"

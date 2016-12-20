@@ -219,6 +219,10 @@ let translate (statements, functions, structs) =
   let print_bool_t = L.function_type i32_t [| i32_t |] in
   let print_bool_f = L.declare_function "print_bool" print_bool_t the_module in 
 
+  (* Declare draw triangle *)
+  let triangle_t = L.function_type i32_t [| L.pointer_type i8_t |] in 
+  let triangle_func = L.declare_function "system" triangle_t the_module in
+
   (* Declare list functions *)
   let initIdList_t  = L.function_type list_t [| |] in
   let initIdList_f  = L.declare_function "init_List" initIdList_t the_module in
@@ -625,6 +629,10 @@ let translate (statements, functions, structs) =
                       in
                       L.build_call node_change_f [| l_val;position;data2 |] "tmp" builder )
                       
+      | A.Call ("triangle", [a1;a2;a3;a4;a5;a6]) -> 
+        let triangle_args= String.concat " " ["./lib/run "; string_of_expr(a1);string_of_expr(a2);string_of_expr(a3);string_of_expr(a4);string_of_expr(a5);string_of_expr(a6)] in
+        let e' =  L.build_global_stringptr triangle_args "str" builder in
+        L.build_call triangle_func [| e' |] "triangle" builder 
 
       | A.Call ("print", [e]) ->
         (* ignore(print_endline("; print")); *)
