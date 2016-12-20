@@ -34,15 +34,5 @@ declare i32 @node_change(%struct.NodeList*, i32, i8*)
 
 define i32 @main() {
 entry:
-  %l = alloca %struct.NodeList*
-  %init = call %struct.NodeList* @init_List()
-  store %struct.NodeList* %init, %struct.NodeList** %l
-  %l1 = load %struct.NodeList*, %struct.NodeList** %l
-  %tmp = call i8* @int_to_pointer(i32 3)
-  %tmp2 = call %struct.NodeList* @add_back(%struct.NodeList* %l1, i8* %tmp)
-  %l3 = load %struct.NodeList*, %struct.NodeList** %l
-  %tmp4 = call i8* @index_acess(%struct.NodeList* %l3, i32 0)
-  %tmp5 = call i32 @pointer_to_int(i8* %tmp4)
-  %printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @fmt, i32 0, i32 0), i32 %tmp5)
   ret i32 0
 }
