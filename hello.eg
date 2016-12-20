@@ -6,13 +6,12 @@ int main(){
 	list int l;
 	int a=2;
 	l.add(a);
-	triangle(0.0,0.5,-1.0,-1.0,1.0,-1.0);
 	print(l.get(0));
 	func(5);
 	int aa=l.get(0);
 	print(aa);
-	/*l.get(0) = 3;*/
-	print(aa);
+	l[0]= 3;
+	print(l.get(0));
 	return 1+1;
 }
 

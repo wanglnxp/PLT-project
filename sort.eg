@@ -1,8 +1,8 @@
 
 void swap(list int l, int i, int k){
 	int temp = l.get(i);
-	l.get(0) = l.get(k);
-	l.get(k) = temp;
+	l[0] = l.get(k);
+	l[k] = temp;
 }
 
 
@@ -22,9 +22,7 @@ int partition(list int l, int left, int right){
 
 
 void sort(list int l, int left, int right){
-	if(left > right) {
-		
-	}
+	if(left > right) {}
 	int storeIndex = partition(l,left,right);
 	sort(l,left,storeIndex - 1);
 	sort(l,storeIndex+1,right);

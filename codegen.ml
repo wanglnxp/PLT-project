@@ -76,13 +76,13 @@ let translate (statements, functions, structs) =
     in
 
     let struct_decl_field_datatypes sdecl =
-          let svar_decl_list =
-            let rec test_function pass_list head = match head with
-                A.Vdecl (t, n) -> (t, n)::pass_list
-                | A.Block (a) -> List.fold_left test_function pass_list a
-                |_ -> pass_list
-            in List.fold_left test_function [] sdecl.A.s_stmt_list
-          in
+      let svar_decl_list =
+        let rec test_function pass_list head = match head with
+            A.Vdecl (t, n) -> (t, n)::pass_list
+            | A.Block (a) -> List.fold_left test_function pass_list a
+            |_ -> pass_list
+        in List.fold_left test_function [] sdecl.A.s_stmt_list
+      in
 
       let type_list = List.map (fun (t,_) -> t) svar_decl_list in (*map the datatypes*)
       let name_list = List.map (fun (_,n) -> n) svar_decl_list in (*map the names*)
@@ -92,18 +92,18 @@ let translate (statements, functions, structs) =
           let n = sdecl.sname ^ "." ^ f in
           Hashtbl.add struct_field_datatypes n t; (*add name, datatype*)  
         ) name_list type_list;
-        );
+      );
 
     in
 
     let struct_decl sdecl =
-          let svar_decl_list =
-            let rec test_function pass_list head = match head with
-                A.Vdecl (t, n) -> (t, n)::pass_list
-                | A.Block (a) -> List.fold_left test_function pass_list a
-                |_ -> pass_list
-            in List.fold_left test_function [] sdecl.A.s_stmt_list
-          in
+      let svar_decl_list =
+        let rec test_function pass_list head = match head with
+          A.Vdecl (t, n) -> (t, n)::pass_list
+          | A.Block (a) -> List.fold_left test_function pass_list a
+          |_ -> pass_list
+        in List.fold_left test_function [] sdecl.A.s_stmt_list
+      in
 
       let struct_t = Hashtbl.find struct_types sdecl.sname in (*get llvm struct_t code for it*)
       let type_list = List.map (fun (t,_) -> ltype_of_typ t) svar_decl_list in (*map the datatypes*)
@@ -161,23 +161,23 @@ let translate (statements, functions, structs) =
     | A.BoolLit b -> L.const_int i1_t (if b then 1 else 0)
     (* | A.Id s -> L.build_load (lookup_global s) s *)
     | A.Assign (s, e) -> 
-                    (* match e with
-                    | A.StringLit cont-> let gl = lookup_global s in
-                     (ignore (L.delete_global gl);
-                      L.define_global s (L.const_stringz context cont) the_module)
-                    | _ -> ( *)
-                    match e with
-                    | A.Literal _ 
-                    | A.FloatLit _
-                    | A.BoolLit _ -> 
-                    let e' = global_expr e
-                    and gl = lookup_global s in
-                    (* match t with 
-                    | A.Str ->(ignore (L.delete_global gl);
-                      ignore(L.define_global s (e') the_module ); e')
-                    | _ -> *)(ignore (L.delete_global gl);
-                        ignore (L.define_global s e' the_module); e')
-                    | _ -> raise(Failure("Assign variable type is not primitive type"))
+        (* match e with
+        | A.StringLit cont-> let gl = lookup_global s in
+         (ignore (L.delete_global gl);
+          L.define_global s (L.const_stringz context cont) the_module)
+        | _ -> ( *)
+        match e with
+        | A.Literal _ 
+        | A.FloatLit _
+        | A.BoolLit _ -> 
+        let e' = global_expr e
+        and gl = lookup_global s in
+        (* match t with 
+        | A.Str ->(ignore (L.delete_global gl);
+          ignore(L.define_global s (e') the_module ); e')
+        | _ -> *)(ignore (L.delete_global gl);
+            ignore (L.define_global s e' the_module); e')
+        | _ -> raise(Failure("Assign variable type is not primitive type"))
 
     | _ -> raise(Failure("Expression not allowed in global"))
   in
@@ -301,15 +301,16 @@ let translate (statements, functions, structs) =
     let local_vars =
       let add_formal m (t, n) p = L.set_value_name n p;
         let formal = match t with
-                |Objecttype(struct_n) ->
-                        ignore(Hashtbl.add struct_datatypes n struct_n);
-                        let local = L.build_alloca (ltype_of_typ t) n builder in
-                        ignore (L.build_store p local builder); local
+            |Objecttype(struct_n) ->
+                    ignore(Hashtbl.add struct_datatypes n struct_n);
+                    let local = L.build_alloca (ltype_of_typ t) n builder in
+                    ignore (L.build_store p local builder); local
 
-                | _ -> let local = L.build_alloca (ltype_of_typ t) n builder in
-                      ignore (L.build_store p local builder); local
-          in
-         StringMap.add n formal m in 
+            | _ -> let local = L.build_alloca (ltype_of_typ t) n builder in
+                  ignore (L.build_store p local builder); local
+        in
+        StringMap.add n formal m 
+      in 
          (* l_val = L.build_load (lookup objs) objs builder in
             let check = L.build_call list_length_f [| l_val |] "tmp" builder in
             let l_val = L.build_call initIdList_f [||] "init" builder in *)
@@ -330,12 +331,12 @@ let translate (statements, functions, structs) =
         let rec test pass_list = function
             [] -> pass_list
           | hd :: tl -> let newlist = 
-                          let match_fuc hd pass_list= match hd with
-                            A.Vdecl (a, b) -> (a, b)::pass_list
-                          | A.Block (a) -> test pass_list a
-                          | _ -> pass_list
-                          in match_fuc hd pass_list
-                        in test newlist tl
+              let match_fuc hd pass_list= match hd with
+                A.Vdecl (a, b) -> (a, b)::pass_list
+              | A.Block (a) -> test pass_list a
+              | _ -> pass_list
+              in match_fuc hd pass_list
+            in test newlist tl
 
         in
         let test_function pass_list head = match head with
@@ -361,19 +362,21 @@ let translate (statements, functions, structs) =
         let rec test pass_list = function
             [] -> pass_list
           | hd :: tl -> let newlist = 
-                          let match_fuc hd pass_list= match hd with
-                            A.Vdecl (a, b) -> (a, b)::pass_list
-                          | A.Block (a) -> test pass_list a
-                          | _ -> pass_list
-                          in match_fuc hd pass_list
-                        in test newlist tl
+              let match_fuc hd pass_list= match hd with
+                A.Vdecl (a, b) -> (a, b)::pass_list
+              | A.Block (a) -> test pass_list a
+              | _ -> pass_list
+              in match_fuc hd pass_list
+            in test newlist tl
 
         in
+
         let test_function pass_list head = match head with
             A.Vdecl (a, b) -> (a, b)::pass_list
           | A.Block (block) -> test pass_list block
           | _ -> pass_list
-        in List.fold_left test_function [] fdecl.A.body in
+        in List.fold_left test_function [] fdecl.A.body 
+      in
 
        (*record list type*)
       let locals_typ = 
@@ -385,13 +388,13 @@ let translate (statements, functions, structs) =
     (* print_endline(string_of_int(StringMap.cardinal local_vars)); *)
 
     (* Return list type when called *)
-    let look_typ n = try TypMap.find n locals_typ
-                  with Not_found -> raise(Failure("No matching list type in any variable"))
+    let look_typ n = try TypMap.find n locals_typ 
+        with Not_found -> raise(Failure("No matching list type in any variable"))
     in
 
     (* Return the value for a variable or formal argument, for a struct return the pointer *)
     let lookup n = try StringMap.find n local_vars
-                  with Not_found -> try StringMap.find n global_vars with Not_found -> raise(Failure("No matching pattern in Local_vars/Global_vars access in lookup"))
+        with Not_found -> try StringMap.find n global_vars with Not_found -> raise(Failure("No matching pattern in Local_vars/Global_vars access in lookup"))
     in
 
     let symbol_vars =
@@ -403,40 +406,46 @@ let translate (statements, functions, structs) =
         let rec test pass_list = function
             [] -> pass_list
           | hd :: tl -> let newlist = 
-                          let match_fuc hd pass_list= match hd with
-                            A.Vdecl (a, b) -> (a, b)::pass_list
-                          | A.Block (a) -> test pass_list a
-                          | _ -> pass_list
-                          in match_fuc hd pass_list
-                        in test newlist tl
+              let match_fuc hd pass_list= 
+                match hd with
+                  A.Vdecl (a, b) -> (a, b)::pass_list
+                | A.Block (a) -> test pass_list a
+                | _ -> pass_list
+                in match_fuc hd pass_list
+              in test newlist tl
 
         in
+
         let test_function pass_list head = match head with
             A.Vdecl (a, b) -> (a, b)::pass_list
           | A.Block (block) -> test pass_list block
           | _ -> pass_list
-        in List.fold_left test_function [] fdecl.A.body in
-
+        in List.fold_left test_function [] fdecl.A.body 
+      in
 
       let symbolmap = List.fold_left add_to_symbol_table SymbolsMap.empty fdecl.A.formals in
-        List.fold_left add_to_symbol_table symbolmap locals in
+        List.fold_left add_to_symbol_table symbolmap locals 
+      in
 
       let global_vars_2 = 
         let add_to_symbol_table m (t, n) =
           SymbolsMap.add n t m in
-        List.fold_left add_to_symbol_table SymbolsMap.empty globals in
+        List.fold_left add_to_symbol_table SymbolsMap.empty globals 
+      in
 
     (* Return the type for a variable or formal argument *)
     let lookup_datatype n = try SymbolsMap.find n symbol_vars
-      with Not_found -> try SymbolsMap.find n global_vars_2 with Not_found -> raise(Failure("No matching pattern in globals access in lookup_datatype"))
+      with Not_found -> 
+        try SymbolsMap.find n global_vars_2 
+        with Not_found -> raise(Failure("No matching pattern in globals access in lookup_datatype"))
     in
 
     let format_str x_type = match x_type with
-          "i32"    -> int_format_str
-        | "double"  -> float_format_str
-        | "i8*" -> string_format_str
-        | "i1" -> int_format_str
-        | _ -> (* string_format_str *) raise (Failure "Invalid printf type")
+        "i32"  -> int_format_str
+      | "double"  -> float_format_str
+      | "i8*" -> string_format_str
+      | "i1" -> int_format_str
+      | _ -> (* string_format_str *) raise (Failure "Invalid printf type")
     in
 
     (* Construct code for an expression; return its value *)
@@ -475,14 +484,13 @@ let translate (statements, functions, structs) =
       )
     in
 
-    let bool_binops op =  (
-    match op with
+    let bool_binops op =   
+      match op with
         | A.And     -> L.build_and
         | A.Or      -> L.build_or
         | A.Equal   -> L.build_icmp L.Icmp.Eq
         | A.Neq     -> L.build_icmp L.Icmp.Ne
         | _ -> raise (Failure "Unsupported bool binop")
-      )
     in
 
     (* Return the datatype for a struct *)
@@ -497,18 +505,18 @@ let translate (statements, functions, structs) =
     let struct_access struct_id struct_field isAssign builder = (*id field*)
       let struct_name = try Hashtbl.find struct_datatypes struct_id with Not_found -> try Hashtbl.find local_struct_datatypes struct_id with Not_found -> raise(Failure("111"))
     in
-        let search_term = (struct_name ^ "." ^ struct_field) in
-        let field_index =try Hashtbl.find struct_field_indexes search_term
-        with Not_found ->raise(Failure(search_term^""))
-        in
-        let value = lookup struct_id in
-        (*and t = find_struct struct_name in
-        let struct_pt = L.build_pointercast value t "tmp" builder in *)
+      let search_term = (struct_name ^ "." ^ struct_field) in
+      let field_index =try Hashtbl.find struct_field_indexes search_term
+      with Not_found ->raise(Failure(search_term^""))
+      in
+      let value = lookup struct_id in
+      (*and t = find_struct struct_name in
+      let struct_pt = L.build_pointercast value t "tmp" builder in *)
       let _val = L.build_struct_gep value field_index struct_field builder in
       let _val =
         if isAssign then
-                build_load _val struct_field builder
-            else
+          build_load _val struct_field builder
+        else
           _val
       in
       _val
@@ -545,113 +553,114 @@ let translate (statements, functions, structs) =
         let e' = expr builder e in
           (match op with
             A.Neg     -> 
-                (match e with
-                      A.FloatLit f -> L.build_fneg
-                    | A.Literal i -> L.build_neg
-                    | A.Id s ->
-                      let mytyp = lookup_datatype s in
-                        (match mytyp with
-                            A.Int -> L.build_neg
-                          | A.Float -> L.build_fneg
-                          | _ -> raise (Failure "Invalid Unop id type")
-                        )
-                    | A.StructAccess(id,field) ->(
-                      let my_datatype = lookup_struct_datatype(id,field) in (*get datatype*)
-                        match my_datatype with
-                        | A.Int -> L.build_neg
-                        | A.Float -> L.build_fneg
-                        | _ ->  raise (Failure "Invalid Types of Struct binop")
-                        )
-                    | _ -> raise (Failure "Invalid Unop type")
-                 )
+              (match e with
+                  A.FloatLit f -> L.build_fneg
+                | A.Literal i -> L.build_neg
+                | A.Id s ->
+                  let mytyp = lookup_datatype s in
+                    (match mytyp with
+                        A.Int -> L.build_neg
+                      | A.Float -> L.build_fneg
+                      | _ -> raise (Failure "Invalid Unop id type")
+                    )
+                | A.StructAccess(id,field) ->(
+                  let my_datatype = lookup_struct_datatype(id,field) in (*get datatype*)
+                    match my_datatype with
+                    | A.Int -> L.build_neg
+                    | A.Float -> L.build_fneg
+                    | _ ->  raise (Failure "Invalid Types of Struct binop")
+                    )
+                | _ -> raise (Failure "Invalid Unop type")
+              )
           | A.Not     -> L.build_not) e' "tmp" builder
       | A.Assign (s, e) -> let e' = expr builder e in
 	                   ignore (L.build_store e' (lookup s) builder); e'
       | A.StructAssign (id, field, e) -> 
-                            let e' = expr builder e in
-                            let des =(struct_access id field false builder) in
-                            ignore (L.build_store e' des builder);e'
+          let e' = expr builder e in
+          let des =(struct_access id field false builder) in
+          ignore (L.build_store e' des builder);e'
 
       | A.Objcall (objs, funs, args) ->
           let check_fun objs funs args = match funs with
-            | "add" -> (let l_val = L.build_load (lookup objs) objs builder in
-(*             let check = L.build_call list_length_f [| l_val |] "tmp" builder in
- *)            
-(*                     print_endline(";"^ string_of_bool(L.is_null(check)));
-                       print_endline(";"^ (L.string_of_llvalue(check)));
-                       print_endline(";"^ (L.value_name(check))); *)
-                       let d_val = expr builder (List.hd args) in
-                       let void_d_ptr =
-                       match look_typ objs with
-                       | A.Int ->
-                       L.build_call int_to_pointer_f [| d_val |] "tmp" builder
-                       | A.Float ->
-                       L.build_call float_to_pointer_f [| d_val |] "tmp" builder
-                       | _ -> raise(Failure("List contains element other then int or float")) 
-                         in
-                       let app = L.build_call appendId_f [| l_val; void_d_ptr |] "tmp" builder
-                     in
-                       (* ignore (L.build_store app (lookup objs) builder); *)
-                       app)
+            | "add" -> 
+              (let l_val = L.build_load (lookup objs) objs builder in      
+                  let d_val = expr builder (List.hd args) in
 
-            | "get" -> (let l_val = L.build_load (lookup objs) objs builder in
-                       let d_val = expr builder (List.hd args) in
-                       let void_ptr = L.build_call index_acess_f [| l_val;d_val |] "tmp" builder in
-                       match look_typ objs with
-                       | A.Int ->
-                       L.build_call  pointer_to_int_f [| void_ptr |] "tmp" builder
-                       | A.Float ->
-                       L.build_call  pointer_to_float_f [| void_ptr |] "tmp" builder
-                       | _ -> raise(Failure("List contains element other then int or float")) 
-                       L.build_call  pointer_to_int_f [| void_ptr |] "tmp" builder)
-                       (* let void_res = L.build_call index_acess_f [| void_d_ptr;d_val |] "tmp" builder in
-                       L.build_call pointer_to_int_f [| void_res |] "tmp" builder *)
+                  let void_d_ptr =
+                    match look_typ objs with
+                    | A.Int ->
+                    L.build_call int_to_pointer_f [| d_val |] "tmp" builder
+                    | A.Float ->
+                    L.build_call float_to_pointer_f [| d_val |] "tmp" builder
+                    | _ -> raise(Failure("List contains element other then int or float")) 
+                  in
 
-            | "remove" -> (let l_val = L.build_load (lookup objs) objs builder in
-                          let d_val = expr builder (List.hd args) in
-                          let app = L.build_call list_remove_f [| l_val;d_val |] "rmv" builder in
-                            app )
+                  let app = L.build_call appendId_f [| l_val; void_d_ptr |] "tmp" builder
+                  in
+                  (* ignore (L.build_store app (lookup objs) builder); *)
+              app)
+
+            | "get" -> 
+                (let l_val = L.build_load (lookup objs) objs builder in
+                    let d_val = expr builder (List.hd args) in
+                    let void_ptr = L.build_call index_acess_f [| l_val;d_val |] "tmp" builder in
+                    match look_typ objs with
+                    | A.Int ->
+                    L.build_call  pointer_to_int_f [| void_ptr |] "tmp" builder
+                    | A.Float ->
+                    L.build_call  pointer_to_float_f [| void_ptr |] "tmp" builder
+                    | _ -> raise(Failure("List contains element other then int or float")) 
+                    L.build_call  pointer_to_int_f [| void_ptr |] "tmp" builder)
+                    (* let void_res = L.build_call index_acess_f [| void_d_ptr;d_val |] "tmp" builder in
+                    L.build_call pointer_to_int_f [| void_res |] "tmp" builder *)
+
+            | "remove" -> 
+                (let l_val = L.build_load (lookup objs) objs builder in
+                    let d_val = expr builder (List.hd args) in
+                    let app = L.build_call list_remove_f [| l_val;d_val |] "rmv" builder in
+                      app )
 
             | _ -> L.const_int i32_t 42
           in 
           check_fun objs funs args
+
       | A.ListAssign (id, pos, e) -> 
-                    (let l_val = L.build_load (lookup id) id builder in
-                      let position = expr builder pos in
-                      let data = expr builder e in
-                      let data2 = 
-                        match TypMap.find id locals_typ with
-                        | A.Int ->
-                        L.build_call  int_to_pointer_f [| data |] "tmp" builder
-                        | A.Float ->
-                        L.build_call  float_to_pointer_f [| data |] "tmp" builder
-                        | _ -> raise(Failure("List contains element other then int or float")) 
-                      in
-                      L.build_call node_change_f [| l_val;position;data2 |] "tmp" builder )
+          (let l_val = L.build_load (lookup id) id builder in
+            let position = expr builder pos in
+            let data = expr builder e in
+            let data2 = 
+              match TypMap.find id locals_typ with
+              | A.Int ->
+              L.build_call  int_to_pointer_f [| data |] "tmp" builder
+              | A.Float ->
+              L.build_call  float_to_pointer_f [| data |] "tmp" builder
+              | _ -> raise(Failure("List contains element other then int or float")) 
+            in
+            L.build_call node_change_f [| l_val;position;data2 |] "tmp" builder )
                       
       | A.Call ("triangle", [a1;a2;a3;a4;a5;a6]) -> 
-        let triangle_args= String.concat " " ["./lib/run "; string_of_expr(a1);string_of_expr(a2);string_of_expr(a3);string_of_expr(a4);string_of_expr(a5);string_of_expr(a6)] in
-        let e' =  L.build_global_stringptr triangle_args "str" builder in
-        L.build_call triangle_func [| e' |] "triangle" builder 
+          let triangle_args= String.concat " " ["./lib/run "; string_of_expr(a1);string_of_expr(a2);string_of_expr(a3);string_of_expr(a4);string_of_expr(a5);string_of_expr(a6)] in
+          let e' =  L.build_global_stringptr triangle_args "str" builder in
+          L.build_call triangle_func [| e' |] "triangle" builder 
 
       | A.Call ("print", [e]) ->
         (* ignore(print_endline("; print")); *)
-        let e' = expr builder e in
-        let typ_e' = L.string_of_lltype(L.type_of e') in
-          if typ_e' = "i1" then
-            (* if (L.string_of_llvalue(e')) = "i1 true" then
-            L.build_call printf_func [| format_str typ_e' ; L.build_global_stringptr ("true") "str" builder |] "printf" builder
+          let e' = expr builder e in
+          let typ_e' = L.string_of_lltype(L.type_of e') in
+            if typ_e' = "i1" then
+              (* if (L.string_of_llvalue(e')) = "i1 true" then
+              L.build_call printf_func [| format_str typ_e' ; L.build_global_stringptr ("true") "str" builder |] "printf" builder
+              else
+              L.build_call printf_func [| format_str typ_e' ; L.build_global_stringptr ("flase") "str" builder |] "printf" builder *)
+              let e1' = build_sitofp e' flt_t "x" builder in
+              let e2' = build_fptosi e1' i32_t "x2" builder in
+              (* ignore(print_endline("; "^L.string_of_lltype(L.type_of e2'))); *)
+              L.build_call print_bool_f [| e2' |] "print_bool" builder
+              (* L.build_call printf_func [| format_str typ_e' ; e' |] "printf" builder *)
             else
-            L.build_call printf_func [| format_str typ_e' ; L.build_global_stringptr ("flase") "str" builder |] "printf" builder *)
-            let e1' = build_sitofp e' flt_t "x" builder in
-            let e2' = build_fptosi e1' i32_t "x2" builder in
-            (* ignore(print_endline("; "^L.string_of_lltype(L.type_of e2'))); *)
-            L.build_call print_bool_f [| e2' |] "print_bool" builder
-            (* L.build_call printf_func [| format_str typ_e' ; e' |] "printf" builder *)
-          else
-          L.build_call printf_func [| format_str typ_e' ; e' |] "printf" builder
-          (* L.build_call printf_func [| int_format_str ; (expr builder e) |]
-          "printf" builder *)
+            L.build_call printf_func [| format_str typ_e' ; e' |] "printf" builder
+            (* L.build_call printf_func [| int_format_str ; (expr builder e) |]
+            "printf" builder *)
          
       | A.Call (f, act) ->
          let (fdef, fdecl) = try StringMap.find f function_decls 
@@ -660,7 +669,7 @@ let translate (statements, functions, structs) =
           let actuals = List.rev (List.map (expr builder) (List.rev act)) in
           let result = (match fdecl.A.typ with A.Void -> ""
                                             | _ -> f ^ "_result") in
-         L.build_call fdef (Array.of_list actuals) result builder
+          L.build_call fdef (Array.of_list actuals) result builder
 
       | _ -> raise(Failure("No matching pattern in expr"))
     in
@@ -735,9 +744,10 @@ let translate (statements, functions, structs) =
       | t -> L.build_ret (L.const_int (ltype_of_typ t) 0))
   in
 
-   try List.iter build_function_body functions;
+    try List.iter build_function_body functions;
    (* ignore(Llvm_linker.link_modules the_module llm); *)
   the_module
-with Not_found -> raise(Failure("No matching pattern in buuilding function"))
+
+    with Not_found -> raise(Failure("No matching pattern in buuilding function"))
 
 
