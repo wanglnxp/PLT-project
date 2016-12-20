@@ -23,6 +23,7 @@ let check (statements, functions, structs) =
     in
     List.fold_left test StringMap.empty structs
   in
+
   (* Raise an exception if the given list has a duplicate *)
   let report_duplicate exceptf list =
     let rec helper = function
@@ -44,7 +45,7 @@ let check (statements, functions, structs) =
     match (lvaluet, rvaluet) with
       (ListTyp a, ListTyp b) -> if a = b then lvaluet else raise err
     | (Objecttype a, Objecttype b) ->  if a = b then lvaluet else raise err
-    | (a, b) -> ignore(print_endline("; "^string_of_typ a));if lvaluet == rvaluet then lvaluet else raise err
+    | (a, _) -> ignore(print_endline("; "^string_of_typ a));if lvaluet == rvaluet then lvaluet else raise err
   in
 
   (* Separate global variable from statements *)
@@ -53,20 +54,20 @@ let check (statements, functions, structs) =
     let rec test pass_list = function
         [] -> pass_list
       | hd :: tl -> let newlist = 
-                      let match_fuc hd pass_list= match hd with
-                        Vdecl (a, b) -> (a, b)::pass_list
-                      | Expr (a) -> (fun x -> match x with Assign _-> pass_list | _ -> raise (Failure ("Wrong declare type in Block")) ) a
-                      | _ -> raise (Failure ("wrong declare in Block"))
-                      in match_fuc hd pass_list
+        let match_fuc hd pass_list= match hd with
+          Vdecl (a, b) -> (a, b)::pass_list
+        | Expr (a) -> (fun x -> match x with Assign _-> pass_list | _ -> raise (Failure ("Wrong declare type in Block")) ) a
+        | _ -> raise (Failure ("wrong declare in Block"))
+        in match_fuc hd pass_list
       in test newlist tl
     in
-        let test_function pass_list head = match head with
-            Vdecl (a, b) -> (a, b)::pass_list
-          | Expr (a) -> (fun x -> match x with Assign _-> pass_list | _ -> raise (Failure ("wrong declare in Block")) ) a
-          | Block (block) ->  test pass_list block
-          | _ -> raise (Failure ("Should not declare other than vdecl"))
-        in List.fold_left test_function [] statements
-      in
+      let test_function pass_list head = match head with
+          Vdecl (a, b) -> (a, b)::pass_list
+        | Expr (a) -> (fun x -> match x with Assign _-> pass_list | _ -> raise (Failure ("wrong declare in Block")) ) a
+        | Block (block) ->  test pass_list block
+        | _ -> raise (Failure ("Should not declare other than vdecl"))
+      in List.fold_left test_function [] statements
+  in
       
   List.iter (check_not_void (fun n -> "illegal void global " ^ n)) globals;
    
@@ -93,6 +94,7 @@ let check (statements, functions, structs) =
      { typ = Void; fname = "printf"; formals = [(Float, "x")];
         body = [] } built_in_decls
    in
+
    let built_in_decls = StringMap.add "prints"
      { typ = Void; fname = "prints"; formals = [(Str, "x")];
         body = [] } built_in_decls
@@ -105,7 +107,7 @@ let check (statements, functions, structs) =
 
   (* Check if function is declared before *)
   let function_decl s = try StringMap.find s function_decls
-       with Not_found -> raise (Failure ("unrecognized function " ^ s))
+      with Not_found -> raise (Failure ("unrecognized function " ^ s))
   in
 
   let _ = function_decl "main" in (* Ensure "main" is defined *)
@@ -160,19 +162,20 @@ let check (statements, functions, structs) =
       | StringLit _ -> Str
       | Id s -> type_of_identifier s
       | Binop(e1, op, e2) as e -> let t1 = expr e1 and t2 = expr e2 in
-				(match op with
-          		  Add | Sub | Mult | Div when (t1 = Int || t1 = Float) && (t2 = Int || t2 = Float) -> (if t1 = Float || t2 = Float then Float
-          		  						 else Int)
-				| Equal | Neq when t1 = t2 -> Bool
-				| Less | Leq | Greater | Geq when (t1 = Int || t1 = Float) && (t2 = Int || t2 = Float) -> Bool
-				| And | Or when t1 = Bool && t2 = Bool -> Bool
-        		| _ -> raise (Failure ("illegal binary operator " ^
-              		string_of_typ t1 ^ " " ^ string_of_op op ^ " " ^
-              		string_of_typ t2 ^ " in " ^ string_of_expr e))
-        		)
+  				(match op with
+      		  Add | Sub | Mult | Div when (t1 = Int || t1 = Float) && (t2 = Int || t2 = Float) -> (if t1 = Float || t2 = Float then Float
+      		  						 else Int)
+  				| Equal | Neq when t1 = t2 -> Bool
+  				| Less | Leq | Greater | Geq when (t1 = Int || t1 = Float) && (t2 = Int || t2 = Float) -> Bool
+  				| And | Or when t1 = Bool && t2 = Bool -> Bool
+          		| _ -> raise (Failure ("illegal binary operator " ^
+                		string_of_typ t1 ^ " " ^ string_of_op op ^ " " ^
+                		string_of_typ t2 ^ " in " ^ string_of_expr e))
+          )
       | Unop(op, e) as ex -> let t = expr e in
 	 	     (match op with
 	   	     Neg when t = Int -> Int
+         | Neg when t = Float -> Float
 	 	     | Not when t = Bool -> Bool
          | _ -> raise (Failure ("illegal unary operator " ^ string_of_uop op ^
 	  		   string_of_typ t ^ " in " ^ string_of_expr ex)))
@@ -188,75 +191,80 @@ let check (statements, functions, structs) =
         else
         (match meth with
           "add" ->
-          (let lst = type_of_identifier obj in
-            match lst with
-              ListTyp(t) -> let ele = expr (List.hd args) in
-                if t <> ele then
-                  raise (Failure("variable "^obj^" is not matching type of input"))
-                else
-                  ListTyp(t)
-            | _ -> raise (Failure("variable "^obj^" is not matching type of "^meth^" method "))
-          )
-          | "get" -> 
             (let lst = type_of_identifier obj in
-            match lst with
-              ListTyp(t) -> t
-            | _ -> raise (Failure("variable "^obj^" is not matching type of "^meth^" method "))
-          )
-            | "remove" -> 
+              match lst with
+                ListTyp(t) -> let ele = expr (List.hd args) in
+                  if t <> ele then
+                    raise (Failure("variable "^obj^" is not matching type of input"))
+                  else
+                    ListTyp(t)
+              | _ -> raise (Failure("variable "^obj^" is not matching type of "^meth^" method "))
+            )
+        | "get" -> 
             (let lst = type_of_identifier obj in
-            match lst with
-              ListTyp(t) -> t
-            | _ -> raise (Failure("variable "^obj^" is not matching type of "^meth^" method "))
-          )
+              match lst with
+                ListTyp(t) -> t
+              | _ -> raise (Failure("variable "^obj^" is not matching type of "^meth^" method "))
+            )
+        | "remove" -> 
+           (let lst = type_of_identifier obj in
+              match lst with
+                ListTyp(t) -> t
+              | _ -> raise (Failure("variable "^obj^" is not matching type of "^meth^" method "))
+            )
 
         | a -> raise (Failure("have not define obj call " ^ a))
         )
       | Call(fname, actuals) as call -> 
          (let fd = function_decl fname in
-         if List.length actuals != List.length fd.formals then
-           raise (Failure ("expecting " ^ string_of_int
-             (List.length fd.formals) ^ " arguments in " ^ string_of_expr call))
-         else
-            match fname with 
-            "print" -> ignore(expr (List.hd actuals));Int 
-            | _ ->
-              List.iter2 (fun (ft, _) e -> let et = expr e in
-                ignore (check_assign ft et
-                (Failure ("illegal actual argument found " ^ string_of_typ et ^
-                " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e))))
-             fd.formals actuals;
-           fd.typ)
+           if List.length actuals != List.length fd.formals then
+             raise (Failure ("expecting " ^ string_of_int
+               (List.length fd.formals) ^ " arguments in " ^ string_of_expr call))
+           else
+              match fname with 
+              "print" -> ignore(expr (List.hd actuals));Int 
+              | _ ->
+                List.iter2 (fun (ft, _) e -> let et = expr e in
+                  ignore (check_assign ft et
+                  (Failure ("illegal actual argument found " ^ string_of_typ et ^
+                  " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e))))
+                  fd.formals actuals;
+          fd.typ)
 
-      | ListAssign (id, pos, e) -> (let et = expr e in let el = type_of_identifier id in
-                match el with
-                ListTyp(t) ->
-                  (if t != et then
-                    raise (Failure(string_of_typ et ^"\'s type is differ from list "^id))
-                  else
-                    ListTyp(t) )
-                | _ -> raise (Failure("Not valid list type"))
+      | ListAssign (id, _, e) -> 
+        (let et = expr e in let el = type_of_identifier id in
+          match el with
+          ListTyp(t) ->
+            (if t != et then
+              raise (Failure(string_of_typ et ^"\'s type is differ from list "^id))
+            else
+              ListTyp(t) )
+          | _ -> raise (Failure("Not valid list type"))
 
-                  ignore(check_assign el et (Failure (string_of_typ et ^"\'s type is differ from list "^id)));
-                  et
-                                    )
+            ignore(check_assign el et (Failure (string_of_typ et ^"\'s type is differ from list "^id)));
+            et
+        )
 
-      | StructAccess (id,field) -> ( let item = type_of_identifier id in
-                                    match item with
-                                      Objecttype st_n -> (let args = StringMap.find st_n struct_map in 
-                                        try StringMap.find field args with Not_found -> raise(Failure("struct has no matched field "^field))
-                                      )
-                                    | _-> raise (Failure ("No matched struct")) )
+      | StructAccess (id,field) -> 
+        (let item = type_of_identifier id in
+          match item with
+            Objecttype st_n -> (let args = StringMap.find st_n struct_map in 
+              try StringMap.find field args with Not_found -> raise(Failure("struct has no matched field "^field))
+            )
+          | _-> raise (Failure ("No matched struct")) 
+        )
 
-      | StructAssign (id, field, e) -> let item = type_of_identifier id in
-                                      match item with
-                                      Objecttype st_n -> (let args = StringMap.find st_n struct_map in 
-                                        let left = try  StringMap.find field args with Not_found -> raise(Failure("struct has no matched field")) in
-                                        let et = expr e
-                                      in
-                                        check_assign left et (Failure ("illegal actual argument found in structassign "^id)) 
-                                      )
-                                    | _-> raise (Failure ("No matched struct"))
+      | StructAssign (id, field, e) -> 
+        let item = type_of_identifier id in
+          match item with
+          Objecttype st_n -> 
+            (let args = StringMap.find st_n struct_map in 
+              let left = try  StringMap.find field args with Not_found -> raise(Failure("struct has no matched field")) in
+                let et = expr e
+              in
+                check_assign left et (Failure ("illegal actual argument found in structassign "^id)) 
+            )
+        | _-> raise (Failure ("No matched struct"))
     in
 
     let check_bool_expr e = if expr e != Bool
@@ -266,14 +274,14 @@ let check (statements, functions, structs) =
     (* Verify a statement or throw an exception *)
     let rec stmt = function
         Block sl -> let rec check_block = function
-             [Return _ as s] -> stmt s
-           | Return _ :: _ -> raise (Failure "nothing may follow a return")
-           | Block sl :: ss -> check_block (sl @ ss)
-           | s :: ss -> stmt s ; check_block ss
-           | [] -> ()
+            [Return _ as s] -> stmt s
+          | Return _ :: _ -> raise (Failure "nothing may follow a return")
+          | Block sl :: ss -> check_block (sl @ ss)
+          | s :: ss -> stmt s ; check_block ss
+          | [] -> ()
         in check_block sl
       | Expr e -> ignore (expr e)
-      | Vdecl (e1, e2) -> ()
+      | Vdecl (_, _) -> ()
       | Return e -> let t = expr e in if t = func.typ then () else
          raise (Failure ("return gives " ^ string_of_typ t ^ " expected " ^
                          string_of_typ func.typ ^ " in " ^ string_of_expr e))
@@ -291,40 +299,6 @@ let check (statements, functions, structs) =
   in
   List.iter check_function functions
 
-    (* let fun_local = 
-      let rec test_function pass_list head = match head with
-        Vdecl (a, b) -> (a, b)::pass_list
-      | Block (a) -> List.fold_left test_function pass_list a
-      |_ -> pass_list
-      in List.fold_left test_function [] statements
-    in
-    (* Type of each variable (global, formal, or local *)
-    let symbols = List.fold_left (fun m (t, n) -> StringMap.add n t m)
-      StringMap.empty (globals @ func.formals @ fun_local ) *)
-
-    (* in *)
-      (* Verify a statement or throw an exception *)
-    (* let rec stmt = function
-  Block sl -> let rec check_block = function
-           [Return _ as s] -> stmt s
-         | Return _ :: _ -> raise (Failure "nothing may follow a return")
-         | Block sl :: ss -> check_block (sl @ ss)
-         | s :: ss -> stmt s ; check_block ss
-         | [] -> ()
-        in check_block sl *)
-      (* | Expr e -> ignore (expr e) *)
-      (* | Return e -> let t = expr e in if t = func.typ then () else
-         raise (Failure ("return gives " ^ string_of_typ t ^ " expected " ^
-                         string_of_typ func.typ ^ " in " ^ string_of_expr e)) *)
-           
-      (* | If(p, b1, b2,c) -> check_bool_expr p; stmt b1; stmt b2
-      | For(e1, e2, e3, st) -> ignore (expr e1); check_bool_expr e2;
-                               ignore (expr e3); stmt st
-      | While(p, s) -> check_bool_expr p; stmt s *)
-    (* in
-    stmt (Block func.body) *)
-
-
-
+  
 
 
