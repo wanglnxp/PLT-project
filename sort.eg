@@ -1,7 +1,7 @@
 
 void swap(list int l, int i, int k){
 	int temp = l.get(i);
-	l[0] = l.get(k);
+	l[i] = l.get(k);
 	l[k] = temp;
 }
 
@@ -29,9 +29,8 @@ void sort(list int l, int left, int right){
 }
 
 
-list int l;
-
 int main() {
+	list int l;
 	l.add(3);
 	l.add(2);
 	l.add(5);

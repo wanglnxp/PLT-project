@@ -4,14 +4,11 @@ void func(int i) {
 
 int main(){
 	list int l;
-	int a=2;
-	l.add(a);
-	print(l.get(0));
-	func(5);
-	int aa=l.get(0);
-	print(aa);
-	l[0]= 3;
-	print(l.get(0));
+	list int n;
+	n.add(10);
+	l.add(3);
+	n[0] = l.get(0);
+	print(n.get(0));
 	return 1+1;
 }
 
