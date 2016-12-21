@@ -3,3 +3,4 @@ int main(){
 	int i;
 	return 1;
 	i = 123; /* Code after return */
+}
