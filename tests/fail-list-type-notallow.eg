@@ -1,0 +1,5 @@
+list string l;
+int main(){
+	list string l;
+	return 0;
+}

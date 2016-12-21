@@ -522,8 +522,7 @@ let translate (statements, functions, structs) =
       _val
     in
 
-    (* let str_float str = try float_of_string(String.concat "." [(String.sub str 4 (String.length str-4));"0"]) with Not_found -> raise(Failure("fucked up"))
-    in *)
+    (* expression generation *)
     let rec expr builder = function
         A.Literal i -> L.const_int i32_t i
       | A.FloatLit f  -> L.const_float flt_t f
@@ -618,6 +617,11 @@ let translate (statements, functions, structs) =
                 (let l_val = L.build_load (lookup objs) objs builder in
                     let d_val = expr builder (List.hd args) in
                     let app = L.build_call list_remove_f [| l_val;d_val |] "rmv" builder in
+                      app )
+
+            | "length" -> 
+                (let l_val = L.build_load (lookup objs) objs builder in
+                    let app = L.build_call list_length_f [| l_val |] "len" builder in
                       app )
 
             | _ -> L.const_int i32_t 42

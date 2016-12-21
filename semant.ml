@@ -55,14 +55,24 @@ let check (statements, functions, structs) =
         [] -> pass_list
       | hd :: tl -> let newlist = 
         let match_fuc hd pass_list= match hd with
-          Vdecl (a, b) -> (a, b)::pass_list
+          Vdecl (a, b) -> (match a with 
+                          | ListTyp _ -> raise (Failure ("List should not assign value in globals"))
+                          | Str -> raise (Failure ("String should not assign value in globals"))
+                          | _ -> (a, b)::pass_list)
         | Expr (a) -> (fun x -> match x with Assign _-> pass_list | _ -> raise (Failure ("Wrong declare type in Block")) ) a
         | _ -> raise (Failure ("wrong declare in Block"))
         in match_fuc hd pass_list
       in test newlist tl
     in
       let test_function pass_list head = match head with
-          Vdecl (a, b) -> (a, b)::pass_list
+          Vdecl (a, b) -> (match a with 
+                          ListTyp t -> 
+                            (match t with 
+                            | Int
+                            | Float ->(a, b)::pass_list
+                            | _ -> raise (Failure ("List only support int and float now"))
+                            )
+                          | _ -> (a, b)::pass_list)
         | Expr (a) -> (fun x -> match x with Assign _-> pass_list | _ -> raise (Failure ("wrong declare in Block")) ) a
         | Block (block) ->  test pass_list block
         | _ -> raise (Failure ("Should not declare other than vdecl"))
@@ -186,11 +196,20 @@ let check (statements, functions, structs) =
 				     " = " ^ string_of_typ rt ^ " in " ^ 
 				     string_of_expr ex))
       | Objcall(obj, meth, args) -> 
-        if List.length args != 1 then
-        raise (Failure("list function "^meth^" should has one argument"))
-        else
+
         (match meth with
-          "add" ->
+        | "length" -> 
+            if List.length args = 0 then
+           (let lst = type_of_identifier obj in
+              match lst with
+                ListTyp(t) -> t
+              | _ -> raise (Failure("variable "^obj^" is not matching type of "^meth^" method "))
+            )
+          else
+          raise (Failure("list function "^meth^" takes no argument"))
+
+        | "add" ->
+          if List.length args = 1 then
             (let lst = type_of_identifier obj in
               match lst with
                 ListTyp(t) -> let ele = expr (List.hd args) in
@@ -200,21 +219,31 @@ let check (statements, functions, structs) =
                     ListTyp(t)
               | _ -> raise (Failure("variable "^obj^" is not matching type of "^meth^" method "))
             )
+            else
+          raise (Failure("list function "^meth^" should has one argument"))
         | "get" -> 
+          if List.length args = 1 then
             (let lst = type_of_identifier obj in
               match lst with
                 ListTyp(t) -> t
               | _ -> raise (Failure("variable "^obj^" is not matching type of "^meth^" method "))
             )
+            else
+          raise (Failure("list function "^meth^" should has one argument"))
         | "remove" -> 
+          if List.length args = 1 then
            (let lst = type_of_identifier obj in
               match lst with
                 ListTyp(t) -> t
               | _ -> raise (Failure("variable "^obj^" is not matching type of "^meth^" method "))
             )
+           else
+          raise (Failure("list function "^meth^" should has one argument"))
 
         | a -> raise (Failure("have not define obj call " ^ a))
-        )
+      )
+
+
       | Call(fname, actuals) as call -> 
          (let fd = function_decl fname in
            if List.length actuals != List.length fd.formals then
