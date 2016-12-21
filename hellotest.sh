@@ -1,9 +1,6 @@
 # Hello World
 
-make
 var=$1
-echo $var
-
 
 echo "Result:"
 echo
@@ -18,6 +15,3 @@ clang -emit-llvm -o list.bc -c src/list.c
 # MAYBE ANOTHER DEMO HERE? 
 
 echo
-
-make clean
-echo "Thanks for watching!" 
