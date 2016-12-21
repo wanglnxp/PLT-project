@@ -4,7 +4,6 @@ make
 var=$1
 echo $var
 
-read -p "Let's see some Hello World action. Please any key to continue."
 
 echo "Result:"
 echo
