@@ -1,0 +1,7 @@
+list int l;
+
+int main(){
+	l.add(10);
+	print(l.get(0));
+	return 0;
+}

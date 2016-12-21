@@ -1,0 +1,8 @@
+int main(){
+	list float l;
+	l.add(23.2);
+	l.add(34.4);
+	l.remove(0);
+	print(l.get(0));
+	return 0;
+}
